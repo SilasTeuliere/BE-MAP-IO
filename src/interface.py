@@ -1,15 +1,14 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk , messagebox
 import os
 
 
 def show_shortcuts():
-    # Créer une fenêtre personnalisée
+
     shortcut_window = tk.Toplevel()
     shortcut_window.title("Raccourcis clavier")
     shortcut_window.geometry("900x300")
 
-    # Créer un widget Text pour afficher les raccourcis
     shortcuts = (
         "Importer un Fichier CSV : Ctrl + O / Cmd + O sur Mac\n"
         "Sauvegarder le fichier de flag :  Ctrl + S / Cmd + S sur Mac\n"
@@ -21,33 +20,44 @@ def show_shortcuts():
         "Affichage Statistique :  Ctrl + A / Cmd + A sur Mac\n"
     )
 
-    # Créer un widget Text pour afficher les raccourcis
     text_widget = tk.Text(shortcut_window, wrap=tk.WORD, font=("Arial", 12), padx=10, pady=10)
     text_widget.pack(expand=True, fill=tk.BOTH)
 
-    # Appliquer le style en gras à la partie avant les deux-points
     text_widget.tag_configure("bold", font=("Arial", 12, "bold"))
 
-    # Ajouter les raccourcis dans le widget Text
     for line in shortcuts.split("\n"):
-        if line:  # Vérifier si la ligne n'est pas vide
-            # Séparer chaque ligne en deux parties : avant et après les deux-points
+        if line:  
             before_colon, after_colon = line.split(":", 1)
-            
-            # Insérer la partie avant les deux-points en gras
             text_widget.insert(tk.END, before_colon, "bold")
             text_widget.insert(tk.END, " :")
-            
-            # Insérer la partie après les deux-points normalement
             text_widget.insert(tk.END, after_colon + "\n")
 
-    # Ajouter un bouton de fermeture
     close_button = tk.Button(shortcut_window, text="Ok", command=shortcut_window.destroy)
     close_button.pack(pady=10)
 
-    # Désactiver l'édition du widget Text
     text_widget.config(state=tk.DISABLED)
 
+def open_multiplier_window():
+    multiplier_window = tk.Toplevel()
+    multiplier_window.title("Coefficient Multiplicateur")
+    multiplier_window.geometry("400x200")
+    label = tk.Label(multiplier_window, text="Indiquer le coefficient multiplicateur :", font=("Arial", 12))
+    label.pack(pady=10)
+    coeff_entry = tk.Entry(multiplier_window, font=("Arial", 12), width=10)
+    coeff_entry.pack(pady=5)
+
+    def validate_multiplier():
+        coeff = coeff_entry.get()
+        try:
+            coeff = float(coeff)  
+            print(f"Coefficient entré : {coeff}") 
+            multiplier_window.destroy()
+        except ValueError:
+            messagebox.showerror("Erreur", "Veuillez entrer un nombre valide.")
+            coeff_entry.delete(0, tk.END)
+
+    validate_button = tk.Button(multiplier_window, text="Valider", command=validate_multiplier)
+    validate_button.pack(pady=10)
 
 def create_menu(root):
     menubar = tk.Menu(root)
@@ -65,8 +75,7 @@ def create_menu(root):
     edit_menu.add_command(label="Supprimer toutes les données")
     edit_menu.add_command(label="Annuler toutes les modifications")
     edit_menu.add_command(label="Annuler la dernière modification")
-    edit_menu.add_separator()
-    edit_menu.add_command(label="Rajouter coefficient multiplicateur à toutes les données")
+    edit_menu.add_command(label="Rajouter coefficient multiplicateur à toutes les données", command=open_multiplier_window)
     edit_menu.add_command(label="Invalider toute la série de données")
     menubar.add_cascade(label="Édition", menu=edit_menu)
     
@@ -96,6 +105,23 @@ def main():
     
     create_menu(root)
     
+    # Cadre principal pour afficher le graphe 
+    graph_frame = tk.Frame(root, bd=2, relief="ridge")
+    graph_frame.pack(expand=True, fill="both", padx=20, pady=20)
+
+    canvas = tk.Canvas(graph_frame, bg="white")  # Ajout du fond blanc pour simuler un graphe
+    canvas.pack(expand=True, fill="both")
+
+    # Cadre pour les boutons
+    button_frame = tk.Frame(root)
+    button_frame.pack(pady=10)
+
+    select_button = tk.Button(button_frame, text="Sélectionner données", width=20)
+    delete_button = tk.Button(button_frame, text="Supprimer données", width=20)
+
+    select_button.grid(row=0, column=0, padx=10)
+    delete_button.grid(row=0, column=1, padx=10)
+
     root.mainloop()
 
 if __name__ == "__main__":
