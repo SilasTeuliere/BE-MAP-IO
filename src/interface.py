@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import os
 
 
 def show_shortcuts():
@@ -90,8 +91,8 @@ def main():
     root.title("ClearCCNData")
     root.geometry("800x600")
 
-    # L'ajout du logo 
-    root.iconphoto(False, tk.PhotoImage(file="../data/logo.png"))
+    logo_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'logo.png')
+    root.iconphoto(False, tk.PhotoImage(file=logo_path))
     
     create_menu(root)
     
