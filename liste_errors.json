@@ -1,8 +1,0 @@
-{
-    "0.684": "Invalid due to zero/span check. Used for Level",
-    "0.980": "Missing due to calibration or zero/span check",
-    "0.456": "Missing due to calibration or zero/span check",
-    "0.999": "Missing measurement, unspecified reason",
-    "0.559": "Local contamination"
-}
-
