@@ -7,7 +7,8 @@ import pandas as pd
 import platform
 from data_loader import load_data
 
-
+#Controle Clavier : En production
+#Controle Souris : A faire
 class CCNDataApp:
     #Initialise l'application Tkinter, configure la fenêtre principale et initialise les donnée (Utiliser l'interface faite par Nour)
     def __init__(self, root):
@@ -73,7 +74,7 @@ class CCNDataApp:
             messagebox.showinfo("Chargement", "Fichier filtré chargé avec succès")
         self.display_scatter_plot()
 
-    #Affiche le diagramme en nuage de point (A finir) (Voir data_loader)
+    #Affiche le diagramme en nuage de point (A finir)
     def display_scatter_plot(self):
         if self.data is None:
             return
@@ -164,6 +165,12 @@ class CCNDataApp:
             messagebox.showinfo("Statistiques", stats.to_string())
         else:
             messagebox.showwarning("Statistiques", "Aucune donnée disponible")
+
+    ##Action sur le click
+    #def on_click(self, event):
+    
+    ## Mettre à jour visuellement les points sélectionnés
+    #def update_selected_points(self, event):
 
 if __name__ == "__main__":
     root = tk.Tk()
