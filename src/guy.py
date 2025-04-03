@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.dates as mdates
 import pandas as pd
 import platform
+from data_loader import load_data
 
 
 class CCNDataApp:
@@ -64,30 +66,50 @@ class CCNDataApp:
     def load_csv(self):
         file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
         if file_path:
-            self.data = pd.read_csv(file_path)
-            messagebox.showinfo("Chargement", "Fichier chargé avec succès")
-
-        return self.diagramme_poster()
+            self.data = load_data(file_path)
+            if self.data is None:
+                messagebox.showwarning("Chargement", "Échec du chargement des données filtrées")
+                return
+            messagebox.showinfo("Chargement", "Fichier filtré chargé avec succès")
+        self.display_scatter_plot()
 
     #Affiche le diagramme en nuage de point (A finir) (Voir data_loader)
-    def diagramme_poster(self):
-        numeric_cols = self.data.select_dtypes(include=['number']).columns
-        if len(numeric_cols) < 2:
-            messagebox.showwarning("Visualisation", "Pas assez de colonnes numériques pour un graphique")
+    def display_scatter_plot(self):
+        if self.data is None:
             return
+        if "datetime" not in self.data.columns or "ccn_conc" not in self.data.columns:
+            messagebox.showwarning("Visualisation", "Les colonnes 'datetime' et 'ccn_conc' sont requises")
+            return
+        
+        self.data["datetime"] = pd.to_datetime(self.data["datetime"], errors='coerce')
+        self.data = self.data.dropna(subset=["datetime", "ccn_conc"])
 
-        x_col, y_col = numeric_cols[:2]
+        start_date = self.data["datetime"].min()
+        end_date = start_date + pd.Timedelta(days=2)
+        self.data = self.data[(self.data["datetime"] >= start_date) & (self.data["datetime"] < end_date)]
+        
         if hasattr(self, 'canvas'):
             self.canvas.get_tk_widget().destroy()
-
+        
         fig = Figure(figsize=(6, 4))
         ax = fig.add_subplot(111)
-        ax.scatter(self.data[x_col], self.data[y_col], alpha=0.5, label="Données")
-        ax.set_xlabel(x_col)
-        ax.set_ylabel(y_col)
-        ax.set_title("Diagramme de points")
+        ax.scatter(self.data["datetime"], self.data["ccn_conc"], alpha=0.5, label="Données")
+        
+        ax.set_xlabel("Date et Heure")
+        ax.set_ylabel("CCN_Conc")
+        ax.set_title("Diagramme de points: CCN_Conc par Date et Heure")
+        
+        # Format de l'axe x
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M:%S'))
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))  # 1 heure d'intervalle
+        
         ax.legend()
         ax.grid(True)
+    
+         # Rotation des labels de l'axe des x pour plus de lisibilité
+        for label in ax.get_xticklabels():
+            label.set_rotation(90)
+        
         self.canvas = FigureCanvasTkAgg(fig, master=self.root)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
