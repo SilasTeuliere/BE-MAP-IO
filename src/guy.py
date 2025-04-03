@@ -7,12 +7,14 @@ import platform
 
 
 class CCNDataApp:
+    #Initialise l'application Tkinter, configure la fenêtre principale et initialise les donnée (Utiliser l'interface faite par Nour)
     def __init__(self, root):
         self.root = root
         self.root.title("ClearCCNData")
         self.data = None
         self.create_menu()
         
+    #Crée la barre de menu et ajoute les différentes option (Utiliser l'interface faite par Nour)
     def create_menu(self):
         menu_bar = tk.Menu(self.root)
         
@@ -39,13 +41,14 @@ class CCNDataApp:
         
         self.bind_shortcuts()
 
+    #Retourne le raccourci clavier approprié en fonction du système d'exploitation (Fini)
     def get_shortcut(self, key):
         if platform.system() == "Darwin":  # macOS
             return f"⌘{key}"
         else:  # Windows/Linux
             return f"Ctrl+{key}"
 
-    #
+    #Associe les raccourcis clavier aux différentes actions (Fini)
     def bind_shortcuts(self):
         modifier = "Command" if platform.system() == "Darwin" else "Control"
         self.root.bind_all(f"<{modifier}-o>", lambda event: self.load_csv())
@@ -66,7 +69,7 @@ class CCNDataApp:
 
         return self.diagramme_poster()
 
-    #Affiche le diagramme en nuage de point (A finir)
+    #Affiche le diagramme en nuage de point (A finir) (Voir data_loader)
     def diagramme_poster(self):
         numeric_cols = self.data.select_dtypes(include=['number']).columns
         if len(numeric_cols) < 2:
