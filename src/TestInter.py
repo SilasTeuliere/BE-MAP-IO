@@ -20,6 +20,9 @@ class CCNDataApp:
         self.create_menu()
         self.create_interface()
         self.bind_shortcuts()
+        self.selected_indices = []
+        self.history = []
+        
 
     def create_menu(self):
         menu_bar = tk.Menu(self.root)
@@ -33,6 +36,7 @@ class CCNDataApp:
 
         edit_menu = tk.Menu(menu_bar, tearoff=0)
         edit_menu.add_command(label="Supprimer toutes les données", command=self.clear_data, accelerator="Ctrl+U")
+        edit_menu.add_command(label="Supprimer données sélectionnées", command=self.delete_selected_points, accelerator="Ctrl+X")
         edit_menu.add_command(label="Annuler toutes les modifications", command=self.undo_all, accelerator="Ctrl+Shift+Z")
         edit_menu.add_command(label="Annuler la dernière modification", command=self.undo_last, accelerator="Ctrl+Z")
         edit_menu.add_command(label="Rajouter coefficient multiplicateur", command=self.open_multiplier_window, accelerator="Ctrl+P")
@@ -59,6 +63,7 @@ class CCNDataApp:
         self.root.bind_all(f"<{modifier}-s>", lambda event: self.save_csv())
         self.root.bind_all(f"<{modifier}-u>", lambda event: self.clear_data())
         self.root.bind_all(f"<{modifier}-z>", lambda event: self.undo_last())
+        self.root.bind_all(f"<{modifier}-x>", lambda event: self.delete_selected_points())
         self.root.bind_all(f"<{modifier}-Shift-Z>", lambda event: self.undo_all())
         self.root.bind_all(f"<{modifier}-p>", lambda event: self.open_multiplier_window())
         self.root.bind_all(f"<{modifier}-i>", lambda event: self.invalidate_series())
@@ -87,6 +92,7 @@ class CCNDataApp:
     def load_csv(self):
         file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
         if file_path:
+            self.file_path = file_path
             self.data = load_data(file_path)
             if self.data is None:
                 messagebox.showwarning("Chargement", "Échec du chargement des données")
@@ -103,6 +109,39 @@ class CCNDataApp:
         else:
             messagebox.showwarning("Sauvegarde", "Aucune donnée à sauvegarder")
 
+    def delete_selected_points(self):
+        if not hasattr(self, 'selected_indices') or not self.selected_indices:
+            messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
+            return
+
+        # Sauvegarde l'historique avant modification
+        if not hasattr(self, 'history'):
+            self.history = []
+        self.history.append(self.data.copy())
+
+        # Conserve les points supprimés dans un "log"
+        deleted = self.data.iloc[self.selected_indices]
+
+        if not hasattr(self, 'deleted_data'):
+            self.deleted_data = deleted.copy()
+        else:
+            self.deleted_data = pd.concat([self.deleted_data, deleted])
+
+        # Supprimer les points du DataFrame
+        self.data = self.data.drop(self.data.index[self.selected_indices]).reset_index(drop=True)
+
+        # Écrase le fichier source avec les données mises à jour
+        if hasattr(self, 'file_path'):
+            self.data.to_csv(self.file_path, index=False)
+
+        # Efface les indices sélectionnés
+        self.selected_indices = []
+
+        # Met à jour le graphique
+        self.display_scatter_plot()
+
+        messagebox.showinfo("Suppression", "Les points sélectionnés ont été supprimés.")
+
     def clear_data(self):
         if self.data is not None:
             self.data = None
@@ -111,10 +150,21 @@ class CCNDataApp:
             messagebox.showwarning("Suppression", "Aucune donnée à supprimer")
 
     def undo_last(self):
-        messagebox.showinfo("Annuler", "Dernière modification annulée")
+        if self.history:
+            self.data = self.history.pop()
+            self.display_scatter_plot()
+            messagebox.showinfo("Annulation", "Dernière modification annulée.")
+        else:
+            messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
     def undo_all(self):
-        messagebox.showinfo("Annuler", "Toutes les modifications ont été annulées")
+        if self.history:
+            self.data = self.history[0]
+            self.history = []
+            self.display_scatter_plot()
+            messagebox.showinfo("Annulation", "Toutes les modifications ont été annulées.")
+        else:
+            messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
     def open_multiplier_window(self):
         multiplier_window = tk.Toplevel()
@@ -174,6 +224,7 @@ class CCNDataApp:
         shortcuts = (
             "Importer un Fichier CSV : Ctrl + O / Cmd + O sur Mac\n"
             "Sauvegarder le fichier :  Ctrl + S / Cmd + S sur Mac\n"
+            "Supprimer données sélectionnées  :  Ctrl + X / Cmd + X sur Mac\n"
             "Supprimer l’ensemble des données  :  Ctrl + U / Cmd + U sur Mac\n"
             "Appliquer un coefficient multiplicateur :  Ctrl + P / Cmd + P sur Mac\n"
             "Annuler la dernière modification :  Ctrl + Z / Cmd + Z sur Mac\n"
@@ -211,6 +262,7 @@ class CCNDataApp:
         xdata = self.data['datetime'].iloc[indices]
         ydata = self.data['ccn_conc'].iloc[indices]
         self.highlight = self.ax.scatter(xdata, ydata, color='red', s=80, edgecolors='black', zorder=10)
+        self.selected_indices = indices
         self.canvas_widget.draw_idle()
 
     def on_click(self, event):
@@ -257,6 +309,7 @@ class CCNDataApp:
         mask = (x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax)
         indices = self.data[mask].index.tolist()
         print(f"{len(indices)} points sélectionnés.")
+        self.selected_indices = indices
         self.highlight_points(indices)
 
     def clear_selection(self):
@@ -278,7 +331,9 @@ class CCNDataApp:
         for widget in self.inner_frame.winfo_children():
             widget.destroy()
 
-        fig = Figure(figsize=(250, 7))  # Taille plus grande pour plus d'espace
+        num_points = len(self.data)
+        height = max(20, num_points/500)  # Ajuste selon la densité souhaitée (si fichier trop grand ne marche plus a verifier)
+        fig = Figure(figsize=(height, 7.5))
         self.ax = fig.add_subplot(111)
         fig.tight_layout()
         self.scatter_points = self.ax.scatter(self.data["datetime"], self.data["ccn_conc"], alpha=0.30, picker=True)
@@ -319,7 +374,7 @@ def main():
     button_frame.pack(pady=10)
 
     select_button = tk.Button(button_frame, text="Sélectionner données", width=20, command=app.clear_selection)
-    delete_button = tk.Button(button_frame, text="Supprimer données", width=20)
+    delete_button = tk.Button(button_frame, text="Supprimer données", width=20, command=app.delete_selected_points)
 
     select_button.grid(row=0, column=0, padx=10)
     delete_button.grid(row=0, column=1, padx=10)
@@ -328,3 +383,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# Prochaine fois :
+# Regarder fichier point supprimer
+# Regarder le probleme de taille du graphe 
+# Regarder le probleme de selection des points
+# Regarder le probleme de sauvegarde 
+# Regarder le probleme de des dates sur la graphe 
+# Faire la selection de plusieur point en meme temps 
