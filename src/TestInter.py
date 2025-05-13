@@ -130,12 +130,25 @@ class CCNDataApp:
         # Supprimer les points du DataFrame
         self.data = self.data.drop(self.data.index[self.selected_indices]).reset_index(drop=True)
 
-        # Écrase le fichier source avec les données mises à jour
+            # Export CSV des points supprimés (append sans écraser)
         if hasattr(self, 'file_path'):
-            self.data.to_csv(self.file_path, index=False)
+            deleted_file = self.file_path.replace(".csv", "_deleted.csv")
+
+            # S'il existe déjà, on concatène les anciens + nouveaux supprimés
+            if os.path.exists(deleted_file):
+                existing_deleted = pd.read_csv(deleted_file)
+                combined_deleted = pd.concat([existing_deleted, deleted], ignore_index=True)
+            else:
+                combined_deleted = deleted
+
+            # Sauvegarde
+            combined_deleted.to_csv(deleted_file, index=False)
 
         # Efface les indices sélectionnés
         self.selected_indices = []
+
+        deleted_file = self.file_path.replace(".csv", "_deleted.csv")
+        self.deleted_data.to_csv(deleted_file, index=False)
 
         # Met à jour le graphique
         self.display_scatter_plot()
@@ -304,10 +317,13 @@ class CCNDataApp:
     def on_select(self, eclick, erelease):
         xmin, xmax = sorted([eclick.xdata, erelease.xdata])
         ymin, ymax = sorted([eclick.ydata, erelease.ydata])
-        x = self.data['datetime']
-        y = self.data['ccn_conc']
-        mask = (x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax)
+
+        x_num = mdates.date2num(self.data['datetime'])  # Convertit les dates en floats
+        y = self.data['ccn_conc'].to_numpy()
+
+        mask = (x_num >= xmin) & (x_num <= xmax) & (y >= ymin) & (y <= ymax)
         indices = self.data[mask].index.tolist()
+
         print(f"{len(indices)} points sélectionnés.")
         self.selected_indices = indices
         self.highlight_points(indices)
@@ -317,6 +333,7 @@ class CCNDataApp:
             self.highlight.remove()
             self.highlight = None
             self.canvas_widget.draw_idle()
+        self.selected_indices = []
 
     def display_scatter_plot(self):
         if self.data is None:
@@ -355,9 +372,15 @@ class CCNDataApp:
         #self.canvas_widget.mpl_connect('button_press_event', self.on_click)
 
         # Ajouter RectangleSelector pour la sélection de zones
-        self.rs = RectangleSelector(self.ax, self.on_select,
-                                    button=[1], minspanx=5, minspany=5, spancoords='pixels',
-                                    interactive=True)
+        self.rs = RectangleSelector(
+            self.ax, 
+            self.on_select,
+            button=[1],
+            minspanx=5, 
+            minspany=5, 
+            spancoords='data',
+            interactive=True
+            )
 
 def main():
     root = tk.Tk()
@@ -386,9 +409,10 @@ if __name__ == "__main__":
 
 
 # Prochaine fois :
-# Regarder fichier point supprimer
+# Regarder fichier point supprimer -> recreer au lieu d'ajouter
 # Regarder le probleme de taille du graphe 
 # Regarder le probleme de selection des points
-# Regarder le probleme de sauvegarde 
-# Regarder le probleme de des dates sur la graphe 
-# Faire la selection de plusieur point en meme temps 
+# Regarder le probleme de sauvegarde a la fermeture fichier -> Reload suppression
+# Regarder le probleme de sauvegarde finaux
+# Regarder le probleme de des dates sur la graphe  
+# Faire la selection de plusieur point en meme temps
