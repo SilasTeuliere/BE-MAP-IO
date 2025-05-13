@@ -104,53 +104,51 @@ class CCNDataApp:
         if self.data is not None:
             file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV Files", "*.csv")])
             if file_path:
+                # Enregistrement du fichier principal
                 self.data.to_csv(file_path, index=False)
-                messagebox.showinfo("Sauvegarde", "Fichier sauvegardé avec succès")
+                self.file_path = file_path  # Met à jour le chemin pour les suppressions futures
+
+                # Enregistrement du fichier supprimé
+                deleted_file_path = os.path.splitext(file_path)[0] + "_deleted.csv"
+                if hasattr(self, 'deleted_data') and not self.deleted_data.empty:
+                    self.deleted_data.to_csv(deleted_file_path, index=False)
+
+                messagebox.showinfo("Sauvegarde", "Fichier et suppressions sauvegardés avec succès.")
         else:
             messagebox.showwarning("Sauvegarde", "Aucune donnée à sauvegarder")
 
     def delete_selected_points(self):
-        if not hasattr(self, 'selected_indices') or not self.selected_indices:
+        if not self.selected_indices:
             messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
             return
 
-        # Sauvegarde l'historique avant modification
-        if not hasattr(self, 'history'):
-            self.history = []
-        self.history.append(self.data.copy())
+        # Sauvegarder l'état actuel dans l'historique pour permettre l'annulation
+        previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
+        self.history.append((self.data.copy(), previous_deleted))
 
-        # Conserve les points supprimés dans un "log"
+        # Récupérer les points à supprimer
         deleted = self.data.iloc[self.selected_indices]
 
-        if not hasattr(self, 'deleted_data'):
-            self.deleted_data = deleted.copy()
-        else:
-            self.deleted_data = pd.concat([self.deleted_data, deleted])
+        # Déterminer le chemin du fichier de suppression
+        deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
 
-        # Supprimer les points du DataFrame
+        # Charger l'existant si le fichier supprimé n'est pas vide
+        if os.path.exists(deleted_file_path) and os.path.getsize(deleted_file_path) > 0:
+            try:
+                old_deleted = pd.read_csv(deleted_file_path)
+            except pd.errors.EmptyDataError:
+                old_deleted = pd.DataFrame()
+        else:
+            old_deleted = pd.DataFrame()
+
+        # Fusionner les anciennes et nouvelles suppressions
+        self.deleted_data = pd.concat([old_deleted, deleted], ignore_index=True)
+
+        # Supprimer les lignes du DataFrame principal
         self.data = self.data.drop(self.data.index[self.selected_indices]).reset_index(drop=True)
 
-            # Export CSV des points supprimés (append sans écraser)
-        if hasattr(self, 'file_path'):
-            deleted_file = self.file_path.replace(".csv", "_deleted.csv")
-
-            # S'il existe déjà, on concatène les anciens + nouveaux supprimés
-            if os.path.exists(deleted_file):
-                existing_deleted = pd.read_csv(deleted_file)
-                combined_deleted = pd.concat([existing_deleted, deleted], ignore_index=True)
-            else:
-                combined_deleted = deleted
-
-            # Sauvegarde
-            combined_deleted.to_csv(deleted_file, index=False)
-
-        # Efface les indices sélectionnés
+        # 🔄 Réinitialiser la sélection et mettre à jour le graphique
         self.selected_indices = []
-
-        deleted_file = self.file_path.replace(".csv", "_deleted.csv")
-        self.deleted_data.to_csv(deleted_file, index=False)
-
-        # Met à jour le graphique
         self.display_scatter_plot()
 
         messagebox.showinfo("Suppression", "Les points sélectionnés ont été supprimés.")
@@ -164,15 +162,18 @@ class CCNDataApp:
 
     def undo_last(self):
         if self.history:
-            self.data = self.history.pop()
+            self.data, self.deleted_data = self.history.pop()
             self.display_scatter_plot()
+            # Restaurer aussi le fichier des supprimés
+            deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
+            self.deleted_data.to_csv(deleted_file_path, index=False)
             messagebox.showinfo("Annulation", "Dernière modification annulée.")
         else:
             messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
     def undo_all(self):
         if self.history:
-            self.data = self.history[0]
+            self.data, self.deleted_data = self.history[0]
             self.history = []
             self.display_scatter_plot()
             messagebox.showinfo("Annulation", "Toutes les modifications ont été annulées.")
@@ -232,7 +233,7 @@ class CCNDataApp:
     def show_shortcuts(self):
         shortcut_window = tk.Toplevel()
         shortcut_window.title("Raccourcis clavier")
-        shortcut_window.geometry("900x300")
+        shortcut_window.geometry("900x400")
 
         shortcuts = (
             "Importer un Fichier CSV : Ctrl + O / Cmd + O sur Mac\n"
@@ -356,6 +357,7 @@ class CCNDataApp:
         self.scatter_points = self.ax.scatter(self.data["datetime"], self.data["ccn_conc"], alpha=0.30, picker=True)
         self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M:%S'))
 
+
         # Utiliser AutoDateLocator pour gérer automatiquement les graduations des dates
         self.ax.xaxis.set_major_locator(mdates.AutoDateLocator())
 
@@ -409,10 +411,8 @@ if __name__ == "__main__":
 
 
 # Prochaine fois :
-# Regarder fichier point supprimer -> recreer au lieu d'ajouter
+# Regarder le probleme de sauvegarde (sauvegarde le fichier au ctrl S sauvegarde automatique du csv alors qu'on veut peut etre garder celui de base)
 # Regarder le probleme de taille du graphe 
 # Regarder le probleme de selection des points
-# Regarder le probleme de sauvegarde a la fermeture fichier -> Reload suppression
-# Regarder le probleme de sauvegarde finaux
 # Regarder le probleme de des dates sur la graphe  
 # Faire la selection de plusieur point en meme temps
