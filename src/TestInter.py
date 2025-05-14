@@ -4,6 +4,7 @@ from tkinter import Toplevel, scrolledtext
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.widgets import RectangleSelector
+from matplotlib.dates import date2num
 import numpy as np
 import matplotlib.dates as mdates
 import pandas as pd
@@ -279,6 +280,7 @@ class CCNDataApp:
         self.selected_indices = indices
         self.canvas_widget.draw_idle()
 
+
     def on_click(self, event):
         if event.mouseevent.button == 1 and event.artist == self.scatter_points:
             # Enregistrer les limites actuelles de l'axe
@@ -315,19 +317,46 @@ class CCNDataApp:
     #         x, y = event.xdata, event.ydata
     #         print(f"Clic détecté aux coordonnées : ({x}, {y})")
 
+    # def on_select(self, eclick, erelease):
+    #     xmin, xmax = sorted([eclick.xdata, erelease.xdata])
+    #     ymin, ymax = sorted([eclick.ydata, erelease.ydata])
+
+    #     x_num = mdates.date2num(self.data['datetime'])  # Convertit les dates en floats
+    #     y = self.data['ccn_conc'].to_numpy()
+
+    #     mask = (x_num >= xmin) & (x_num <= xmax) & (y >= ymin) & (y <= ymax)
+    #     indices = self.data[mask].index.tolist()
+
+    #     print(f"{len(indices)} points sélectionnés.")
+    #     self.selected_indices = indices
+    #     self.highlight_points(indices)
+
+
     def on_select(self, eclick, erelease):
+        """Sélectionne tous les points dans le rectangle et les met en surbrillance."""
+        if self.data is None:
+            return
+
+        # 1) Récupère les coins du rectangle en coordonnées data (float)
         xmin, xmax = sorted([eclick.xdata, erelease.xdata])
         ymin, ymax = sorted([eclick.ydata, erelease.ydata])
 
-        x_num = mdates.date2num(self.data['datetime'])  # Convertit les dates en floats
-        y = self.data['ccn_conc'].to_numpy()
+        # 2) Masque booléen sur les arrays
+        mask = (
+            (self.x_floats >= xmin) & (self.x_floats <= xmax) &
+            (self.y_vals   >= ymin) & (self.y_vals   <= ymax)
+        )
 
-        mask = (x_num >= xmin) & (x_num <= xmax) & (y >= ymin) & (y <= ymax)
-        indices = self.data[mask].index.tolist()
+        # 3) Indices sélectionnés
+        indices = np.nonzero(mask)[0].tolist()
+        if not indices:
+            messagebox.showinfo("Sélection", "Aucun point dans la zone.")
+            return
 
-        print(f"{len(indices)} points sélectionnés.")
+        # 4) Stocke et affiche en rouge
         self.selected_indices = indices
         self.highlight_points(indices)
+        print(f"{len(indices)} point(s) sélectionné(s) par rectangle.")
 
     def clear_selection(self):
         if self.highlight:
@@ -343,22 +372,26 @@ class CCNDataApp:
             messagebox.showwarning("Visualisation", "Colonnes 'datetime' et 'ccn_conc' requises")
             return
 
+        # Conversion de la colonne datetime et nettoyage
         self.data["datetime"] = pd.to_datetime(self.data["datetime"], errors='coerce')
         self.data = self.data.dropna(subset=["datetime", "ccn_conc"])
+        
+        # Création des arrays nécessaires pour on_select
+        self.x_floats = mdates.date2num(self.data["datetime"])
+        self.y_vals = self.data["ccn_conc"].to_numpy()
 
         for widget in self.inner_frame.winfo_children():
             widget.destroy()
 
         num_points = len(self.data)
-        height = max(20, num_points/500)  # Ajuste selon la densité souhaitée (si fichier trop grand ne marche plus a verifier)
+        height = max(20, num_points/500)
         fig = Figure(figsize=(height, 7.5))
         self.ax = fig.add_subplot(111)
         fig.tight_layout()
         self.scatter_points = self.ax.scatter(self.data["datetime"], self.data["ccn_conc"], alpha=0.30, picker=True)
         self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M:%S'))
 
-
-        # Utiliser AutoDateLocator pour gérer automatiquement les graduations des dates
+        # Utilisation de AutoDateLocator pour gérer automatiquement les graduations
         self.ax.xaxis.set_major_locator(mdates.AutoDateLocator())
 
         self.ax.grid(True)
@@ -369,11 +402,10 @@ class CCNDataApp:
         self.canvas_widget.draw()
         self.canvas_widget.get_tk_widget().pack(fill=tk.X, expand=True)
 
-        # Connecter l'événement de clic à la fonction de rappel
+        # Connecter l'événement pick pour les clics sur les points
         self.canvas_widget.mpl_connect('pick_event', self.on_click)
-        #self.canvas_widget.mpl_connect('button_press_event', self.on_click)
 
-        # Ajouter RectangleSelector pour la sélection de zones
+        # Ajouter le RectangleSelector, actif dès l'affichage du scatter plot
         self.rs = RectangleSelector(
             self.ax, 
             self.on_select,
@@ -382,7 +414,7 @@ class CCNDataApp:
             minspany=5, 
             spancoords='data',
             interactive=True
-            )
+        )
 
 def main():
     root = tk.Tk()
@@ -411,7 +443,6 @@ if __name__ == "__main__":
 
 
 # Prochaine fois :
-# Regarder le probleme de sauvegarde (sauvegarde le fichier au ctrl S sauvegarde automatique du csv alors qu'on veut peut etre garder celui de base)
 # Regarder le probleme de taille du graphe 
 # Regarder le probleme de selection des points
 # Regarder le probleme de des dates sur la graphe  
