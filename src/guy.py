@@ -68,11 +68,15 @@ class CCNDataApp:
     def load_csv(self):
         file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
         if file_path:
-            self.data = load_data(file_path)
-            if self.data is None:
-                messagebox.showwarning("Chargement", "Échec du chargement des données filtrées")
-                return
-            messagebox.showinfo("Chargement", "Fichier filtré chargé avec succès")
+            # Charger avec polars
+            try:
+                df_pl = pl.read_csv(file_path)
+                # Convertir en pandas pour la suite de l'utilisation
+                self.data = df_pl.to_pandas()
+                messagebox.showinfo("Chargement", "Fichier chargé avec succès")
+            except Exception as e:
+                messagebox.showwarning("Chargement", f"Échec du chargement des données: {e}")
+                self.data = None
         self.display_scatter_plot()
 
     #Affiche le diagramme en nuage de point (A finir)
