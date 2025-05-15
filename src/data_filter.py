@@ -14,7 +14,48 @@ def filter_data(df):
     filtered_df = df.filter((df['ccn_flag'] == 0) & (df['pollution_flag'] == 0))
 
     #Recuperation des erreurs
-  
+    df_sorted = df.sort('datetime').to_pandas()
+
+    in_error = False
+    start_time = None
+    end_time = None
+    current_flag = None
+    values = []
+
+    for i, row in df_sorted.iterrows():
+        pollution_flag = row['pollution_flag']
+        ccn_flag = row['ccn_flag']
+        datetime = row['datetime']
+        value = row['ccn_conc']
+
+        #Detecter les erreurs si pollution_flag != 0 ou ccn_flag != 0
+        if pollution_flag != 0 or ccn_flag != 0:
+            flag_code = pollution_flag if pollution_flag != 0 else ccn_flag
+            if not in_error:
+                in_error = True
+                start_time = datetime
+                current_flag = flag_code
+                values = [value]
+            else:
+                values.append(value)
+        else:
+            if in_error:
+                end_time = df_sorted.iloc[i - 1]['datetime']
+                moy_values = sum(values) / len(values)
+                log_error(start_time, end_time, current_flag, moy_values)
+                in_error = False
+                start_time = None
+                end_time = None
+                current_flag = None
+                values = []
+    # Traiter le dernier enregistrement d'erreur s'il existe
+    if in_error:
+        end_time = df_sorted.iloc[-1]['datetime']
+        moy_values = sum(values) / len(values)
+        log_error(start_time, end_time, current_flag, moy_values)
+    
+    return filtered_df
+'''
     #Recupérer les colonnes ou ccn_flag = 0
     erreur = df.filter((df['ccn_flag'] != 0) | (df['pollution_flag'] != 0))
     #recuperer les erreurs au bon format et les ecrire dans le fichier erreur
@@ -27,4 +68,5 @@ def filter_data(df):
             error_code = erreur['ccn_flag'][i]
         error_value = erreur['ccn_conc'][i]
         log_error(start_time, end_time, error_code, error_value)
-    return filtered_df
+'''
+    
