@@ -70,7 +70,7 @@ class CCNDataApp:
         if file_path:
             # Charger avec polars
             try:
-                df_pl = pl.read_csv(file_path)
+                df_pl = load_data(file_path)
                 # Convertir en pandas pour la suite de l'utilisation
                 self.data = df_pl.to_pandas()
                 messagebox.showinfo("Chargement", "Fichier chargé avec succès")
