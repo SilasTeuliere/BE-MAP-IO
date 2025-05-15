@@ -9,6 +9,7 @@ def main():
         print("Erreur lors du chargement des données.")
         return
     print(df.iloc[0])
+    print("Fin du traitement des données.")
 
 
 

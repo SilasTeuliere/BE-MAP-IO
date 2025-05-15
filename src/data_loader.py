@@ -1,5 +1,6 @@
-import polars as pl
+import pandas as pd
 from data_filter import filter_data
+
 def load_data(file_path) :
     """
     Charge un fichier csv en récupérant uniquement les colonnes :
@@ -14,16 +15,14 @@ def load_data(file_path) :
 
     """
     try:
-        data = pl.read_csv(file_path)
+        data = pd.read_csv(file_path)
         columns = {'datetime', 'pollution_flag', 'ccn_flag', 'ccn_sursaturation', 'ccn_conc'}
         missing_columns = columns - set(data.columns)
         if missing_columns:
             raise ValueError(f"Missing columns in the CSV file: {missing_columns}")
-        df = data.select(list(columns))
-        print(df.head())
-        dffiltrer = filter_data(df)
-        print(dffiltrer.head())
+        df = data[list(columns)]
+        df_filtered = filter_data(df)
+        return df_filtered
     except Exception as e:
         print(f"erreur chargement des donnés: {e}")
         return None
-    return dffiltrer
