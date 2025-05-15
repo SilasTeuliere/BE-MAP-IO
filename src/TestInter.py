@@ -8,6 +8,7 @@ from matplotlib.dates import date2num
 import numpy as np
 import matplotlib.dates as mdates
 import pandas as pd
+import polars as pl
 import platform
 import os
 from data_loader import load_data
@@ -93,12 +94,15 @@ class CCNDataApp:
     def load_csv(self):
         file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
         if file_path:
-            self.file_path = file_path
-            self.data = load_data(file_path)
-            if self.data is None:
-                messagebox.showwarning("Chargement", "Échec du chargement des données")
-                return
-            messagebox.showinfo("Chargement", "Fichier chargé avec succès")
+            # Charger avec polars
+            try:
+                df_pl = load_data(file_path)
+                # Convertir en pandas pour la suite de l'utilisation
+                self.data = df_pl.to_pandas()
+                messagebox.showinfo("Chargement", "Fichier chargé avec succès")
+            except Exception as e:
+                messagebox.showwarning("Chargement", f"Échec du chargement des données: {e}")
+                self.data = None
         self.display_scatter_plot()
 
     def save_csv(self):
