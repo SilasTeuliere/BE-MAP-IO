@@ -385,7 +385,7 @@ class CCNDataApp:
 
         num_points = len(self.data)
         height = max(20, num_points/500)
-        fig = Figure(figsize=(height, 7.5))
+        fig = Figure(figsize=(height, 15))
         self.ax = fig.add_subplot(111)
         fig.tight_layout()
         self.scatter_points = self.ax.scatter(self.data["datetime"], self.data["ccn_conc"], alpha=0.30, picker=True)
