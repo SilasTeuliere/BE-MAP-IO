@@ -203,7 +203,15 @@ class CCNDataApp:
             try:
                 coeff = float(coeff)
                 if self.data is not None:
-                    self.data *= coeff
+                    # Sauvegarde avant modification pour pouvoir annuler
+                    previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
+                    self.history.append((self.data.copy(), previous_deleted))
+
+                    # Appliquer le coefficient uniquement aux colonnes numériques sauf datetime
+                    for col in self.data.columns:
+                        if col != "datetime" and pd.api.types.is_numeric_dtype(self.data[col]):
+                            self.data[col] = self.data[col] * coeff
+
                     self.display_scatter_plot()
                 multiplier_window.destroy()
             except ValueError:
