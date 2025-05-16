@@ -102,7 +102,6 @@ class CCNDataApp:
             if self.data is None:
                 messagebox.showwarning("Chargement", "Échec du chargement des données")
                 return
-            messagebox.showinfo("Chargement", "Fichier chargé avec succès")
         self.display_scatter_plot()
 
     def save_csv(self):
@@ -206,7 +205,6 @@ class CCNDataApp:
                 if self.data is not None:
                     self.data *= coeff
                     self.display_scatter_plot()
-                    messagebox.showinfo("Coefficient", f"Multiplication effectuée avec {coeff}")
                 multiplier_window.destroy()
             except ValueError:
                 messagebox.showerror("Erreur", "Veuillez entrer un nombre valide.")
@@ -254,6 +252,8 @@ class CCNDataApp:
             "Annuler toutes les  modifications :  Ctrl + Shift + Z / Cmd + Shift + Z sur Mac\n"
             "Invalider toute la série de données :  Ctrl + I / Cmd + I sur Mac\n"
             "Affichage Statistique :  Ctrl + A / Cmd + A sur Mac\n"
+            "Zoom + : Ctrl + '+' ou Ctrl + '=' / Cmd + '+' ou Cmd + '='\n"
+            "Zoom - : Ctrl + '-' / Cmd + '-'\n"
         )
 
         text_widget = tk.Text(shortcut_window, wrap=tk.WORD, font=("Arial", 12), padx=10, pady=10)
@@ -362,27 +362,25 @@ class CCNDataApp:
 
 
     def on_select(self, eclick, erelease):
-        """Sélectionne tous les points dans le rectangle et les met en surbrillance."""
         if self.data is None:
             return
 
-        # 1) Récupère les coins du rectangle en coordonnées data (float)
+        # Coordonnées du rectangle de sélection
         xmin, xmax = sorted([eclick.xdata, erelease.xdata])
         ymin, ymax = sorted([eclick.ydata, erelease.ydata])
 
-        # 2) Masque booléen sur les arrays
-        mask = (
-            (self.x_floats >= xmin) & (self.x_floats <= xmax) &
-            (self.y_vals   >= ymin) & (self.y_vals   <= ymax)
-        )
+        # Conversion des dates en float pour comparaison
+        x_floats = mdates.date2num(self.data["datetime"])
+        y_vals = self.data["ccn_conc"].to_numpy()
 
-        # 3) Indices sélectionnés
-        indices = np.nonzero(mask)[0].tolist()
+        # Masque booléen des points dans la zone
+        mask = (x_floats >= xmin) & (x_floats <= xmax) & (y_vals >= ymin) & (y_vals <= ymax)
+        indices = np.where(mask)[0].tolist()
+
         if not indices:
             messagebox.showinfo("Sélection", "Aucun point dans la zone.")
             return
 
-        # 4) Stocke et affiche en rouge
         self.selected_indices = indices
         self.highlight_points(indices)
         print(f"{len(indices)} point(s) sélectionné(s) par rectangle.")
@@ -404,6 +402,7 @@ class CCNDataApp:
         # Conversion de la colonne datetime et nettoyage
         self.data["datetime"] = pd.to_datetime(self.data["datetime"], errors='coerce')
         self.data = self.data.dropna(subset=["datetime", "ccn_conc"])
+
         
         # Création des arrays nécessaires pour on_select
         self.x_floats = mdates.date2num(self.data["datetime"])
@@ -454,13 +453,14 @@ class CCNDataApp:
 
         # Ajouter le RectangleSelector, actif dès l'affichage du scatter plot
         self.rs = RectangleSelector(
-            self.ax, 
-            self.on_select,
-            button=[1],
-            minspanx=5, 
-            minspany=5, 
-            spancoords='data',
-            interactive=True
+                self.ax,
+                self.on_select,
+                useblit=True,
+                button=[1],
+                minspanx=5,
+                minspany=5,
+                spancoords='data',
+                interactive=True
         )
 
 
@@ -493,5 +493,4 @@ if __name__ == "__main__":
 # Prochaine fois :
 # Regarder le probleme de taille du graphe 
 # Regarder le probleme de selection des points
-# Regarder le probleme de des dates sur la graphe  
 # Faire la selection de plusieur point en meme temps
