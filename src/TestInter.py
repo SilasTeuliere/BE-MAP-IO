@@ -417,10 +417,13 @@ class CCNDataApp:
         fig = Figure(figsize=(height, 15))
         self.ax = fig.add_subplot(111)
         fig.tight_layout()
+
         colors = self.data["ccn_sursaturation"].map({
-            0.1: "red",
+            0.1: "purple",
             0.2: "blue",
-            0.3: "green"
+            0.3: "green",
+            0.4: "yellow",
+            0.5: "red"
         }).fillna("gray")  # Autres valeurs en gris
 
         # Affichage avec couleurs personnalisées
@@ -431,7 +434,7 @@ class CCNDataApp:
             alpha=0.5,
             picker=True
         )
-        
+
         self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M:%S'))
 
         # Utilisation de AutoDateLocator pour gérer automatiquement les graduations
