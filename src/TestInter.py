@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use("TkAgg")
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import Toplevel, scrolledtext
@@ -349,44 +352,35 @@ class CCNDataApp:
             self.ax.set_ylim(ylim)
             self.canvas_widget.draw_idle()
 
-    # def on_click(self, event):
-    #     if event.inaxes == self.ax:
-    #         x, y = event.xdata, event.ydata
-    #         print(f"Clic détecté aux coordonnées : ({x}, {y})")
-
-    # def on_select(self, eclick, erelease):
-    #     xmin, xmax = sorted([eclick.xdata, erelease.xdata])
-    #     ymin, ymax = sorted([eclick.ydata, erelease.ydata])
-
-    #     x_num = mdates.date2num(self.data['datetime'])  # Convertit les dates en floats
-    #     y = self.data['ccn_conc'].to_numpy()
-
-    #     mask = (x_num >= xmin) & (x_num <= xmax) & (y >= ymin) & (y <= ymax)
-    #     indices = self.data[mask].index.tolist()
-
-    #     print(f"{len(indices)} points sélectionnés.")
-    #     self.selected_indices = indices
-    #     self.highlight_points(indices)
-
-
     def on_select(self, eclick, erelease):
         if self.data is None:
             return
 
-        # Coordonnées du rectangle de sélection
+        if eclick.xdata is None or erelease.xdata is None:
+            print("Clic hors des axes")
+            return
+
+        # Coordonnées du rectangle
         xmin, xmax = sorted([eclick.xdata, erelease.xdata])
         ymin, ymax = sorted([eclick.ydata, erelease.ydata])
 
-        # Conversion des dates en float pour comparaison
-        x_floats = mdates.date2num(self.data["datetime"])
-        y_vals = self.data["ccn_conc"].to_numpy()
+        print("Rectangle :", xmin, xmax, ymin, ymax)
 
-        # Masque booléen des points dans la zone
-        mask = (x_floats >= xmin) & (x_floats <= xmax) & (y_vals >= ymin) & (y_vals <= ymax)
+        # Conversion datetime → float
+        x_data = mdates.date2num(self.data['datetime'])
+        y_data = self.data['ccn_conc'].to_numpy()
+
+        print("x_data range :", x_data.min(), x_data.max())
+        print("y_data range :", y_data.min(), y_data.max())
+
+        # Sélection
+        mask = (x_data >= xmin) & (x_data <= xmax) & (y_data >= ymin) & (y_data <= ymax)
         indices = np.where(mask)[0].tolist()
 
+        print("Points trouvés :", indices)
+
         if not indices:
-            messagebox.showinfo("Sélection", "Aucun point dans la zone.")
+            messagebox.showinfo("Sélection", "Aucun point sélectionné.")
             return
 
         self.selected_indices = indices
@@ -460,16 +454,23 @@ class CCNDataApp:
         self.canvas_widget.mpl_connect('pick_event', self.on_click)
 
         # Ajouter le RectangleSelector, actif dès l'affichage du scatter plot
+        if hasattr(self, 'rs') and self.rs is not None:
+            self.rs.set_active(False)
+            del self.rs
+
         self.rs = RectangleSelector(
-                self.ax,
-                self.on_select,
-                useblit=True,
-                button=[1],
-                minspanx=5,
-                minspany=5,
-                spancoords='data',
-                interactive=True
+            self.ax,
+            self.on_select,
+            useblit=True,
+            button=[1],
+            minspanx=5,
+            minspany=5,
+            spancoords='data',
+            interactive=False,
+            props=dict(facecolor='blue', edgecolor='black', alpha=0.3, fill=True)
         )
+        print("RectangleSelector créé.")
+        self.canvas_widget.get_tk_widget().focus_set()
 
 
 def main():
