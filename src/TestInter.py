@@ -3,13 +3,13 @@ from tkinter import filedialog, messagebox
 from tkinter import Toplevel, scrolledtext
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.widgets import RectangleSelector
 from matplotlib.dates import date2num
 import numpy as np
 import matplotlib.dates as mdates
 import pandas as pd
 import platform
 import os
+from rectangle_selector import RectangleSelector
 from data_loader import load_data
 
 class CCNDataApp:
@@ -69,6 +69,9 @@ class CCNDataApp:
         self.root.bind_all(f"<{modifier}-p>", lambda event: self.open_multiplier_window())
         self.root.bind_all(f"<{modifier}-i>", lambda event: self.invalidate_series())
         self.root.bind_all(f"<{modifier}-a>", lambda event: self.show_statistics())
+        self.root.bind_all(f"<{modifier}-minus>", lambda event: self.zoom_plot(1.2))  # Ctrl + -
+        self.root.bind_all(f"<{modifier}-plus>", lambda event: self.zoom_plot(0.8))   # Ctrl + +
+        self.root.bind_all(f"<{modifier}-equal>", lambda event: self.zoom_plot(0.8))  # Ctrl + = (pour les claviers sans pavé)
 
     def create_interface(self):
         self.graph_frame = tk.Frame(self.root, bd=2, relief="ridge")
@@ -148,7 +151,7 @@ class CCNDataApp:
         # Supprimer les lignes du DataFrame principal
         self.data = self.data.drop(self.data.index[self.selected_indices]).reset_index(drop=True)
 
-        # 🔄 Réinitialiser la sélection et mettre à jour le graphique
+        # Réinitialiser la sélection et mettre à jour le graphique
         self.selected_indices = []
         self.display_scatter_plot()
 
@@ -271,6 +274,28 @@ class CCNDataApp:
             "ClearCCNData v1.0\n\nApplication de visualisation de données environnementales.\nDéveloppée par :\nFanny Barcelo \nGhodbane Nour Elhouda \nMa-ida Salifou-Bawa \nSilas Teuliere."
         )
 
+
+    def zoom_plot(self, factor):
+        if not hasattr(self, 'ax') or self.ax is None:
+            return
+
+        xlim = self.ax.get_xlim()
+        ylim = self.ax.get_ylim()
+
+        # Calcul du centre
+        xcenter = (xlim[0] + xlim[1]) / 2
+        ycenter = (ylim[0] + ylim[1]) / 2
+
+        # Appliquer le facteur de zoom
+        xwidth = (xlim[1] - xlim[0]) * factor / 2
+        yheight = (ylim[1] - ylim[0]) * factor / 2
+
+        # Nouvelle zone
+        self.ax.set_xlim([xcenter - xwidth, xcenter + xwidth])
+        self.ax.set_ylim([ycenter - yheight, ycenter + yheight])
+
+        self.canvas_widget.draw_idle()
+
     def highlight_points(self, indices):
         if self.highlight:
             self.highlight.remove()
@@ -279,7 +304,6 @@ class CCNDataApp:
         self.highlight = self.ax.scatter(xdata, ydata, color='red', s=80, edgecolors='black', zorder=10)
         self.selected_indices = indices
         self.canvas_widget.draw_idle()
-
 
     def on_click(self, event):
         if event.mouseevent.button == 1 and event.artist == self.scatter_points:
@@ -415,6 +439,7 @@ class CCNDataApp:
             spancoords='data',
             interactive=True
         )
+
 
 def main():
     root = tk.Tk()
