@@ -3,13 +3,14 @@ from tkinter import filedialog, messagebox
 from tkinter import Toplevel, scrolledtext
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.widgets import RectangleSelector
+from matplotlib.ticker import MaxNLocator
 from matplotlib.dates import date2num
 import numpy as np
 import matplotlib.dates as mdates
 import pandas as pd
 import platform
 import os
-from rectangle_selector import RectangleSelector
 from data_loader import load_data
 
 class CCNDataApp:
@@ -116,8 +117,6 @@ class CCNDataApp:
                 deleted_file_path = os.path.splitext(file_path)[0] + "_deleted.csv"
                 if hasattr(self, 'deleted_data') and not self.deleted_data.empty:
                     self.deleted_data.to_csv(deleted_file_path, index=False)
-
-                messagebox.showinfo("Sauvegarde", "Fichier et suppressions sauvegardés avec succès.")
         else:
             messagebox.showwarning("Sauvegarde", "Aucune donnée à sauvegarder")
 
@@ -125,7 +124,6 @@ class CCNDataApp:
         if not self.selected_indices:
             messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
             return
-
         # Sauvegarder l'état actuel dans l'historique pour permettre l'annulation
         previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
         self.history.append((self.data.copy(), previous_deleted))
@@ -155,14 +153,24 @@ class CCNDataApp:
         self.selected_indices = []
         self.display_scatter_plot()
 
-        messagebox.showinfo("Suppression", "Les points sélectionnés ont été supprimés.")
-
     def clear_data(self):
-        if self.data is not None:
-            self.data = None
-            messagebox.showinfo("Suppression", "Toutes les données ont été supprimées")
+        if self.data is not None and not self.data.empty:
+            # Sauvegarde dans l'historique pour pouvoir annuler
+            previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
+            self.history.append((self.data.copy(), previous_deleted))
+
+            # Vide les données
+            self.data = self.data.iloc[0:0]  # Conserve les colonnes
+            self.selected_indices = []
+
+            # Vide aussi les données supprimées enregistrées si tu veux
+            self.deleted_data = pd.DataFrame()
+
+            # Met à jour l'affichage
+            self.display_scatter_plot()
         else:
             messagebox.showwarning("Suppression", "Aucune donnée à supprimer")
+            
 
     def undo_last(self):
         if self.history:
@@ -171,7 +179,6 @@ class CCNDataApp:
             # Restaurer aussi le fichier des supprimés
             deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
             self.deleted_data.to_csv(deleted_file_path, index=False)
-            messagebox.showinfo("Annulation", "Dernière modification annulée.")
         else:
             messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
@@ -180,7 +187,6 @@ class CCNDataApp:
             self.data, self.deleted_data = self.history[0]
             self.history = []
             self.display_scatter_plot()
-            messagebox.showinfo("Annulation", "Toutes les modifications ont été annulées.")
         else:
             messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
@@ -212,7 +218,6 @@ class CCNDataApp:
     def invalidate_series(self):
         if self.data is not None:
             self.data = None
-            messagebox.showinfo("Invalidation", "Toute la série de données a été invalidée")
         else:
             messagebox.showwarning("Invalidation", "Aucune donnée disponible")
 
@@ -416,7 +421,8 @@ class CCNDataApp:
         self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M:%S'))
 
         # Utilisation de AutoDateLocator pour gérer automatiquement les graduations
-        self.ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        nombre_de_lignes = self.data.shape[0]
+        self.ax.xaxis.set_major_locator(MaxNLocator(max(10, nombre_de_lignes))) #A changer peut etre plus tard
 
         self.ax.grid(True)
         fig.autofmt_xdate(rotation=45)
