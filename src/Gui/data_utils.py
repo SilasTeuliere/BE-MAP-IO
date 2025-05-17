@@ -1,7 +1,7 @@
 import os
 from tkinter import filedialog, messagebox
 from .graph_utils import display_scatter_plot
-from data_loader import load_data
+from src.data_loader import load_data
 
 
 def load_csv(self):

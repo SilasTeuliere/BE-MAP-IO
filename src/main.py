@@ -22,8 +22,8 @@ def main():
     button_frame = tk.Frame(root)
     button_frame.pack(pady=10)
 
-    select_button = tk.Button(button_frame, text="Sélectionner données", width=20, command=clear_selection)
-    delete_button = tk.Button(button_frame, text="Supprimer données", width=20, command=delete_selected_points)
+    select_button = tk.Button(button_frame, text="Désélectionner données", width=20, command=lambda: clear_selection(app))
+    delete_button = tk.Button(button_frame, text="Supprimer données", width=20, command=lambda: delete_selected_points(app))
 
     select_button.grid(row=0, column=0, padx=10)
     delete_button.grid(row=0, column=1, padx=10)
