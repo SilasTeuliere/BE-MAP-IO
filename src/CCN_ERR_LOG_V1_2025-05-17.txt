@@ -1,0 +1,3 @@
+#acquisition error/standby/quality issue events
+Start Time;End Time;Error Description;Error Value
+# --- 2025 --- #

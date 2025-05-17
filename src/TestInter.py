@@ -1,12 +1,8 @@
-import matplotlib
-matplotlib.use("TkAgg")
-
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import Toplevel, scrolledtext
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.widgets import RectangleSelector
 from matplotlib.ticker import MaxNLocator
 from matplotlib.dates import date2num
 import numpy as np
@@ -14,6 +10,7 @@ import matplotlib.dates as mdates
 import pandas as pd
 import platform
 import os
+from Gui.rectangle_selector import ManualRectangleSelector
 from data_loader import load_data
 
 class CCNDataApp:
@@ -394,6 +391,10 @@ class CCNDataApp:
             self.canvas_widget.draw_idle()
         self.selected_indices = []
 
+    def on_rectangle_select(self, indices):
+        self.selected_indices = indices
+        self.highlight_points(indices)
+
     def display_scatter_plot(self):
         if self.data is None:
             return
@@ -458,19 +459,12 @@ class CCNDataApp:
             self.rs.set_active(False)
             del self.rs
 
-        self.rs = RectangleSelector(
+        self.selector = ManualRectangleSelector(
             self.ax,
-            self.on_select,
-            useblit=True,
-            button=[1],
-            minspanx=5,
-            minspany=5,
-            spancoords='data',
-            interactive=False,
-            props=dict(facecolor='blue', edgecolor='black', alpha=0.3, fill=True)
+            self.canvas_widget,
+            self.data,
+            self.on_rectangle_select
         )
-        print("RectangleSelector créé.")
-        self.canvas_widget.get_tk_widget().focus_set()
 
 
 def main():

@@ -1,17 +1,34 @@
-import pandas as pd
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from data_loader import load_data 
+import tkinter as tk
+
+from Gui.app import CCNDataApp
+from Gui.graph_utils import delete_selected_points
+from Gui.graph_utils import clear_selection
 
 def main():
-    file_path = r"data/Donnée Marion Dufresne/MAPIO-CCN_L1_20210205_20210208 (1).csv"
-    df = load_data(file_path)
-    if df is None or df.empty:
-        print("Erreur lors du chargement des données.")
-        return
-    print(df.iloc[0])
-    print("Fin du traitement des données.")
+    root = tk.Tk()
+    root.title("ClearCCNData")
+    root.geometry("800x600")
 
+    logo_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'logo.png')
+    root.iconphoto(False, tk.PhotoImage(file=logo_path))
 
+    app = CCNDataApp(root)
+
+    # Cadre pour les boutons
+    button_frame = tk.Frame(root)
+    button_frame.pack(pady=10)
+
+    select_button = tk.Button(button_frame, text="Sélectionner données", width=20, command=clear_selection)
+    delete_button = tk.Button(button_frame, text="Supprimer données", width=20, command=delete_selected_points)
+
+    select_button.grid(row=0, column=0, padx=10)
+    delete_button.grid(row=0, column=1, padx=10)
+
+    root.mainloop()
 
 if __name__ == "__main__":
     main()
