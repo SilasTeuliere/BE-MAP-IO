@@ -11,6 +11,9 @@ class CCNDataApp:
         self.highlight = None
         self.selected_indices = []
         self.history = []
+        self.current_start_date = None
+        self.data_by_date = []
+        self.display_window_days = 0.5
 
         interface.setup_menu(self)
         interface.setup_shortcuts(self)
@@ -35,3 +38,5 @@ class CCNDataApp:
         self.clear_selection = types.MethodType(clear_selection, self)
         self.on_rectangle_select = types.MethodType(on_rectangle_select, self)
         self.display_scatter_plot = types.MethodType(display_scatter_plot, self)
+        self.next_slice = types.MethodType(next_slice, self)
+        self.previous_slice = types.MethodType(previous_slice, self)

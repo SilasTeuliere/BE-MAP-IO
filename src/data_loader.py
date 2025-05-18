@@ -21,6 +21,7 @@ def load_data(file_path) :
         if missing_columns:
             raise ValueError(f"Missing columns in the CSV file: {missing_columns}")
         df = data[list(columns)]
+        df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce') #rajout test
         df_filtered = filter_data(df)
         return df_filtered
     except Exception as e:

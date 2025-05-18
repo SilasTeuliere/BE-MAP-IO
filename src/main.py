@@ -6,7 +6,7 @@ import tkinter as tk
 
 from Gui.app import CCNDataApp
 from Gui.graph_utils import delete_selected_points
-from Gui.graph_utils import clear_selection
+from Gui.graph_utils import clear_selection, next_slice, previous_slice
 
 def main():
     root = tk.Tk()
@@ -25,8 +25,13 @@ def main():
     select_button = tk.Button(button_frame, text="Désélectionner données", width=20, command=lambda: clear_selection(app))
     delete_button = tk.Button(button_frame, text="Supprimer données", width=20, command=lambda: delete_selected_points(app))
 
-    select_button.grid(row=0, column=0, padx=10)
-    delete_button.grid(row=0, column=1, padx=10)
+    prev_button = tk.Button(button_frame, text="⟵ Précédent", command=lambda: previous_slice(app))
+    next_button = tk.Button(button_frame, text="Suivant ⟶", command=lambda: next_slice(app))
+
+    prev_button.grid(row=0, column=0, padx=10)
+    select_button.grid(row=0, column=1, padx=10)
+    delete_button.grid(row=0, column=2, padx=10)
+    next_button.grid(row=0, column=3, padx=10)
 
     root.mainloop()
 
