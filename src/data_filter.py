@@ -9,17 +9,22 @@ def filter_data(df):
     param : dataframe contenant les données
     retour : dataframe filtré
     """
+
+    print(" Chargement du fichier CSV...")
+
     init_error_log_file()
     filtered_df = df[(df['ccn_flag'] == 0) & (df['pollution_flag'] == 0)]
 
     df_sorted = df.sort_values('datetime')
+
+    print(f"Chargement terminé ")
 
     in_error = False
     start_time = None
     end_time = None
     current_flag = None
     values = []
-
+    print(" Filtrage des données...")
     for i, row in df_sorted.iterrows():
         pollution_flag = row['pollution_flag']
         ccn_flag = row['ccn_flag']
@@ -47,5 +52,6 @@ def filter_data(df):
         end_time = df_sorted.iloc[-1]['datetime']
         moy_values = sum(values) / len(values)
         log_error(start_time, end_time, current_flag, moy_values)
+    print(f" Filtrage terminé")
 
     return filtered_df
