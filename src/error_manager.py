@@ -2,7 +2,7 @@ from datetime import datetime
 import json
 import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DICO_PATH = os.path.join(BASE_DIR, "data", "dico_error.json")
 ERROR_LOG_FILE = None
 
