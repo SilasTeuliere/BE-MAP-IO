@@ -290,7 +290,7 @@ def display_scatter_plot(self):
     self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M:%S'))
 
     nombre_de_lignes = self.data.shape[0]
-    self.ax.xaxis.set_major_locator(MaxNLocator(max(10, nombre_de_lignes/250)))
+    self.ax.xaxis.set_major_locator(MaxNLocator(min(1000,max(10, nombre_de_lignes/500))))
 
     self.ax.grid(True)
     fig.autofmt_xdate(rotation=45)
