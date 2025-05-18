@@ -13,7 +13,7 @@ class CCNDataApp:
         self.history = []
         self.current_start_date = None
         self.data_by_date = []
-        self.display_window_days = 0.5
+        self.display_window_days = 0.25
 
         interface.setup_menu(self)
         interface.setup_shortcuts(self)
