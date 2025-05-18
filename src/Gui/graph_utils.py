@@ -378,6 +378,7 @@ def previous_slice(self):
 #     )
 
 def display_scatter_plot(self):
+    self.selected_indices = []
     if self.data is None:
         return
     if "datetime" not in self.data.columns or "ccn_conc" not in self.data.columns:
