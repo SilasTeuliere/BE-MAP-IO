@@ -14,8 +14,14 @@ from . import rectangle_selector
 
 
 def delete_selected_points(self):
-    print("delete_selected_points, selected_indices =", self.selected_indices)
+    """
+    Supprime les points actuellement sélectionnés dans la page affichée.
 
+    Les points sont enregistrés dans un fichier `_deleted.csv` pour être restaurables,
+    et la suppression est ajoutée à l'historique pour permettre un undo.
+    """
+
+    #print("delete_selected_points, selected_indices =", self.selected_indices)
     if not self.selected_indices:
         messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
         return
@@ -38,7 +44,15 @@ def delete_selected_points(self):
     self.selected_indices = []
     self.display_scatter_plot()
 
+
 def clear_data(self):
+    """
+    Supprime toutes les données chargées dans le graphique actuel.
+
+    Sauvegarde l'état actuel dans l'historique pour permettre une restauration.
+    Réinitialise les sélections et les données supprimées.
+    """
+    
     if self.data is not None and not self.data.empty:
         previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
         self.history.append((self.data.copy(), previous_deleted))
@@ -54,6 +68,12 @@ def clear_data(self):
         
 
 def undo_last(self):
+    """
+    Annule la dernière action effectuée (suppression ou modification).
+
+    Restaure les données et les données supprimées à leur état précédent.
+    """
+
     if self.history:
         self.data, self.deleted_data = self.history.pop()
         self.display_scatter_plot()
@@ -62,7 +82,14 @@ def undo_last(self):
     else:
         messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
+
 def undo_all(self):
+    """
+    Annule toutes les actions effectuées depuis le début de la session.
+
+    Restaure les données à leur état initial.
+    """
+
     if self.history:
         self.data, self.deleted_data = self.history[0]
         self.history = []
@@ -70,7 +97,14 @@ def undo_all(self):
     else:
         messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
+
 def open_multiplier_window(self):
+    """
+    Affiche une fenêtre pour appliquer un coefficient multiplicateur aux colonnes numériques.
+
+    Enregistre l'état actuel pour permettre une restauration.
+    """
+
     multiplier_window = tk.Toplevel()
     multiplier_window.title("Coefficient Multiplicateur")
     multiplier_window.geometry("400x200")
@@ -100,7 +134,14 @@ def open_multiplier_window(self):
     validate_button = tk.Button(multiplier_window, text="Valider", command=validate_multiplier)
     validate_button.pack(pady=10)
 
+
 def invalidate_series(self):
+    """
+    Supprime tous les points de la page courante sans sélection manuelle.
+
+    Utilise `delete_selected_points` en simulant une sélection complète.
+    """
+
     if self.current_slice is None or self.current_slice.empty:
         messagebox.showinfo("Suppression", "Aucune donnée à supprimer dans cette page.")
         return
@@ -109,7 +150,14 @@ def invalidate_series(self):
 
     self.delete_selected_points()
 
+
 def show_statistics(self):
+    """
+    Affiche des statistiques descriptives des données actuellement chargées.
+
+    Utilise `pandas.describe()` pour produire un résumé statistique.
+    """
+
     if self.data is not None:
         stats = self.data.describe().to_string()
 
@@ -125,7 +173,12 @@ def show_statistics(self):
     else:
         tk.messagebox.showwarning("Statistiques", "Aucune donnée disponible")
 
+
 def show_shortcuts(self):
+    """
+    Affiche une fenêtre contenant les raccourcis clavier disponibles pour l'utilisateur.
+    """
+
     shortcut_window = tk.Toplevel()
     shortcut_window.title("Raccourcis clavier")
     shortcut_window.geometry("900x400")
@@ -161,20 +214,33 @@ def show_shortcuts(self):
 
     text_widget.config(state=tk.DISABLED)
 
+
 def show_about(self):
+    """
+    Affiche une fenêtre "À propos" avec le nom de l'application et les auteurs.
+    """
+
     messagebox.showinfo(
         "À propos",
         "ClearCCNData v1.0\n\nApplication de visualisation de données environnementales.\nDéveloppée par :\nFanny Barcelo \nGhodbane Nour Elhouda \nMa-ida Salifou-Bawa \nSilas Teuliere."
     )   
 
+
 def zoom_plot(self, factor, event = None):
+    """
+    Effectue un zoom sur le graphique, centré sur la souris si un événement est fourni.
+
+    Parameters:
+        factor (float): Le facteur de zoom (ex: 0.8 pour zoom avant, 1.2 pour zoom arrière).
+        event (MouseEvent, optional): L'événement de souris pour centrer le zoom.
+    """
+    
     if not hasattr(self, 'ax') or self.ax is None:
         return
 
     xlim = self.ax.get_xlim()
     ylim = self.ax.get_ylim()
 
-    # Si aucun événement souris : on zoome autour du centre
     if event is None or event.xdata is None or event.ydata is None:
         xcenter = (xlim[0] + xlim[1]) / 2
         ycenter = (ylim[0] + ylim[1]) / 2
@@ -191,9 +257,9 @@ def zoom_plot(self, factor, event = None):
 
 def on_scroll_zoom(self, event):
     if event.button == 'up':
-        self.zoom_plot(0.8, event)  # Zoom avant
+        self.zoom_plot(0.8, event)
     elif event.button == 'down':
-        self.zoom_plot(1.2, event)  # Zoom arrière
+        self.zoom_plot(1.2, event) 
 
 def highlight_points(self, indices):
     if self.highlight:
@@ -240,12 +306,12 @@ def on_click(self, event):
         norm_y = (y - ylim[0]) / (ylim[1] - ylim[0])
 
         distances = np.hypot(norm_x - norm_x_click, norm_y - norm_y_click)
-        idx = np.argmin(distances)  # << indice local dans current_slice
+        idx = np.argmin(distances) 
 
         print(f"Point sélectionné : ({x[idx]}, {y[idx]})")
 
         self.highlight_points([idx])
-        self.selected_indices = [idx]  # << RESTE EN LOCAL
+        self.selected_indices = [idx]
         self.ax.set_xlim(xlim)
         self.ax.set_ylim(ylim)
         self.canvas_widget.draw_idle()
@@ -292,13 +358,13 @@ def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
 
         last_time = current_time
 
-    pages.append((start_idx, len(self.data)))  # dernière page
+    pages.append((start_idx, len(self.data)))
     self.pages = pages
     self.current_page = 0
 
 def add_color_legend(self):
     if hasattr(self, 'legend_frame'):
-        self.legend_frame.destroy()  # Supprimer l’ancienne légende si elle existe
+        self.legend_frame.destroy()
 
     self.legend_frame = tk.Frame(self.inner_frame)
     self.legend_frame.pack(side=tk.TOP, anchor="w", padx=10, pady=5)
@@ -333,13 +399,11 @@ def display_scatter_plot(self):
     self.data["datetime"] = pd.to_datetime(self.data["datetime"], errors='coerce')
     self.data = self.data.dropna(subset=["datetime", "ccn_conc"])
 
-    # Récupération de la tranche en cours
     start, end = self.pages[self.current_page]
     data_slice = self.data.iloc[start:end]
 
-    # NE PAS reset_index pour garder les indices globaux
     self.current_slice = data_slice.copy()
-    self.current_slice_indices = list(data_slice.index)  # indices globaux dans self.data
+    self.current_slice_indices = list(data_slice.index)
 
     for widget in self.inner_frame.winfo_children():
         widget.destroy()
@@ -350,7 +414,6 @@ def display_scatter_plot(self):
     self.ax = fig.add_subplot(111)
     fig.tight_layout()
 
-    # Couleurs selon la sursaturation
     colors = data_slice["ccn_sursaturation"].map({
         0.1: "purple",
         0.2: "blue",
@@ -383,7 +446,6 @@ def display_scatter_plot(self):
     self.canvas_widget.mpl_connect('pick_event', self.on_click)
     self.canvas_widget.mpl_connect("scroll_event", self.on_scroll_zoom)
 
-    # Rectangle selector
     if hasattr(self, 'rs') and self.rs is not None:
         self.rs.set_active(False)
         del self.rs
