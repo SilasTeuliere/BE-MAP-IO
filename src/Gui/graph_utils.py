@@ -141,10 +141,48 @@ def open_multiplier_window(self):
     validate_button.pack(pady=10)
 
 def invalidate_series(self):
-    if self.data is not None:
-        self.data = None
-    else:
-        messagebox.showwarning("Invalidation", "Aucune donnée disponible")
+    print("delete_selected_points_from_current_page, selected_indices =", self.selected_indices)
+
+    if not self.selected_indices:
+        messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
+        return
+
+    # Obtenir les indices globaux à partir de la page courante
+    global_indices = [self.current_slice_indices[i] for i in self.selected_indices if 0 <= i < len(self.current_slice_indices)]
+
+    if not global_indices:
+        messagebox.showwarning("Suppression", "Les indices sélectionnés sont invalides.")
+        return
+
+    # Sauvegarde pour undo
+    previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
+    self.history.append((self.data.copy(), previous_deleted))
+
+    # Extraire les lignes à supprimer
+    deleted = self.data.loc[global_indices]
+
+    # Mettre à jour le fichier deleted.csv
+    deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
+    try:
+        old_deleted = pd.read_csv(deleted_file_path)
+    except (FileNotFoundError, pd.errors.EmptyDataError):
+        old_deleted = pd.DataFrame()
+
+    self.deleted_data = pd.concat([old_deleted, deleted], ignore_index=True)
+    self.deleted_data.to_csv(deleted_file_path, index=False)
+
+    # Supprimer les points de self.data
+    self.data = self.data.drop(index=global_indices).reset_index(drop=True)
+
+    # Recalculer les pages
+    self.create_logical_pages()
+
+    # S'assurer que l'index de page reste valide
+    self.current_page = min(self.current_page, len(self.pages) - 1)
+
+    # Réinitialiser sélection et afficher
+    self.selected_indices = []
+    self.display_scatter_plot()
 
 def show_statistics(self):
     if self.data is not None:
@@ -375,7 +413,7 @@ def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
 
 def add_color_legend(self):
     if hasattr(self, 'legend_frame'):
-        self.legend_frame.destroy()  # Supprime ancienne légende si elle existe
+        self.legend_frame.destroy()  # Supprimer l’ancienne légende si elle existe
 
     self.legend_frame = tk.Frame(self.inner_frame)
     self.legend_frame.pack(side=tk.TOP, anchor="w", padx=10, pady=5)

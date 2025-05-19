@@ -40,3 +40,5 @@ class CCNDataApp:
         self.display_scatter_plot = types.MethodType(display_scatter_plot, self)
         self.next_slice = types.MethodType(next_slice, self)
         self.previous_slice = types.MethodType(previous_slice, self)
+        self.add_color_legend = types.MethodType(add_color_legend, self)
+        self.create_logical_pages = types.MethodType(create_logical_pages, self)
