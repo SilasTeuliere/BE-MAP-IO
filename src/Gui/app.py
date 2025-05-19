@@ -42,3 +42,4 @@ class CCNDataApp:
         self.previous_slice = types.MethodType(previous_slice, self)
         self.add_color_legend = types.MethodType(add_color_legend, self)
         self.create_logical_pages = types.MethodType(create_logical_pages, self)
+        self.on_scroll_zoom = types.MethodType(on_scroll_zoom, self)
