@@ -19,22 +19,13 @@ def delete_selected_points(self):
     if not self.selected_indices:
         messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
         return
-
-    # Conversion des indices locaux en indices globaux
     global_indices = [self.current_slice_indices[i] for i in self.selected_indices if 0 <= i < len(self.current_slice_indices)]
-
     if not global_indices:
         messagebox.showwarning("Suppression", "Les indices sélectionnés sont invalides.")
         return
-
-    # Sauvegarde pour undo
     previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
     self.history.append((self.data.copy(), previous_deleted))
-
-    # Extraction des données à supprimer
     deleted = self.data.loc[global_indices]
-
-    # Mise à jour du fichier deleted.csv
     deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
     try:
         old_deleted = pd.read_csv(deleted_file_path)
@@ -43,40 +34,9 @@ def delete_selected_points(self):
 
     self.deleted_data = pd.concat([old_deleted, deleted], ignore_index=True)
     self.deleted_data.to_csv(deleted_file_path, index=False)
-
-    # Suppression des données du DataFrame principal
     self.data = self.data.drop(index=global_indices).reset_index(drop=True)
-
-    # Réinitialisation
     self.selected_indices = []
     self.display_scatter_plot()
-
-# def delete_selected_points(self):
-#     print("delete_selected_points, selected_indices =", self.selected_indices)
-#     if not self.selected_indices:
-#         messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
-#         return
-
-#     previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
-#     self.history.append((self.data.copy(), previous_deleted))
-
-#     deleted = self.data.iloc[self.selected_indices]
-
-#     deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
-
-#     try:
-#         old_deleted = pd.read_csv(deleted_file_path)
-#     except (FileNotFoundError, pd.errors.EmptyDataError):
-#         old_deleted = pd.DataFrame()
-
-#     self.deleted_data = pd.concat([old_deleted, deleted], ignore_index=True)
-#     self.deleted_data.to_csv(deleted_file_path, index=False)
-
-#     self.data = self.data.drop(self.data.index[self.selected_indices]).reset_index(drop=True)
-
-#     self.selected_indices = []
-#     self.display_scatter_plot()
-
 
 def clear_data(self):
     if self.data is not None and not self.data.empty:
