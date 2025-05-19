@@ -15,78 +15,68 @@ from . import rectangle_selector
 
 def delete_selected_points(self):
     print("delete_selected_points, selected_indices =", self.selected_indices)
+
     if not self.selected_indices:
         messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
+        return
+
+    # Conversion des indices locaux en indices globaux
+    global_indices = [self.current_slice_indices[i] for i in self.selected_indices if 0 <= i < len(self.current_slice_indices)]
+
+    if not global_indices:
+        messagebox.showwarning("Suppression", "Les indices sélectionnés sont invalides.")
         return
 
     # Sauvegarde pour undo
     previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
     self.history.append((self.data.copy(), previous_deleted))
 
-    # Extrait les lignes à supprimer
-    deleted = self.data.iloc[self.selected_indices]
+    # Extraction des données à supprimer
+    deleted = self.data.loc[global_indices]
 
-    # Construit le path du fichier deleted.csv
+    # Mise à jour du fichier deleted.csv
     deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
-
-    # Lecture robuste de l'ancien deleted.csv
     try:
         old_deleted = pd.read_csv(deleted_file_path)
     except (FileNotFoundError, pd.errors.EmptyDataError):
         old_deleted = pd.DataFrame()
 
-    # Concatène et écrit sur disque
     self.deleted_data = pd.concat([old_deleted, deleted], ignore_index=True)
     self.deleted_data.to_csv(deleted_file_path, index=False)
 
-    # Supprime dans le DataFrame principal
-    self.data = self.data.drop(self.data.index[self.selected_indices]).reset_index(drop=True)
+    # Suppression des données du DataFrame principal
+    self.data = self.data.drop(index=global_indices).reset_index(drop=True)
 
-    # Vide la sélection et réaffiche la même tranche
+    # Réinitialisation
     self.selected_indices = []
     self.display_scatter_plot()
 
 # def delete_selected_points(self):
+#     print("delete_selected_points, selected_indices =", self.selected_indices)
 #     if not self.selected_indices:
 #         messagebox.showwarning("Suppression", "Aucun point sélectionné à supprimer.")
-#         return
-
-#     # Vérifier que les indices sélectionnés sont bien dans la plage de self.current_slice_indices
-#     valid_selected = [i for i in self.selected_indices if 0 <= i < len(self.current_slice_indices)]
-#     if not valid_selected:
-#         messagebox.showwarning("Suppression", "Aucun point sélectionné valide.")
-#         return
-
-#     global_indices = [self.current_slice_indices[i] for i in valid_selected]
-    
-#     # Vérifier que ces indices existent dans self.data
-#     if any(idx not in self.data.index for idx in global_indices):
-#         messagebox.showwarning("Suppression", "Certains points sélectionnés ne sont pas valides.")
 #         return
 
 #     previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
 #     self.history.append((self.data.copy(), previous_deleted))
 
-#     deleted = self.data.loc[global_indices]
+#     deleted = self.data.iloc[self.selected_indices]
 
 #     deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
-#     if os.path.exists(deleted_file_path) and os.path.getsize(deleted_file_path) > 0:
-#         try:
-#             old_deleted = pd.read_csv(deleted_file_path)
-#         except pd.errors.EmptyDataError:
-#             old_deleted = pd.DataFrame()
-#     else:
+
+#     try:
+#         old_deleted = pd.read_csv(deleted_file_path)
+#     except (FileNotFoundError, pd.errors.EmptyDataError):
 #         old_deleted = pd.DataFrame()
 
 #     self.deleted_data = pd.concat([old_deleted, deleted], ignore_index=True)
 #     self.deleted_data.to_csv(deleted_file_path, index=False)
 
-#     # Suppression des points du dataframe principal
-#     self.data = self.data.drop(index=global_indices).reset_index(drop=True)
+#     self.data = self.data.drop(self.data.index[self.selected_indices]).reset_index(drop=True)
 
-#     # Réinitialiser la sélection
 #     self.selected_indices = []
 #     self.display_scatter_plot()
+
 
 def clear_data(self):
     if self.data is not None and not self.data.empty:
@@ -235,11 +225,20 @@ def zoom_plot(self, factor):
 def highlight_points(self, indices):
     if self.highlight:
         self.highlight.remove()
-    self.selected_indices = [self.current_slice_indices[i] for i in indices]
+    self.selected_indices = indices
     xdata = self.current_slice['datetime'].iloc[indices]
     ydata = self.current_slice['ccn_conc'].iloc[indices]
     self.highlight = self.ax.scatter(xdata, ydata, color='red', s=80, edgecolors='black', zorder=10)
     self.canvas_widget.draw_idle()
+
+# def highlight_points(self, indices):
+#     if self.highlight:
+#         self.highlight.remove()
+#     self.selected_indices = [self.current_slice_indices[i] for i in indices]
+#     xdata = self.current_slice['datetime'].iloc[indices]
+#     ydata = self.current_slice['ccn_conc'].iloc[indices]
+#     self.highlight = self.ax.scatter(xdata, ydata, color='red', s=80, edgecolors='black', zorder=10)
+#     self.canvas_widget.draw_idle()
 
 def on_select(self, eclick, erelease):
     if self.data is None:
@@ -265,13 +264,11 @@ def on_select(self, eclick, erelease):
 
 def on_click(self, event):
     if event.mouseevent.button == 1 and event.artist == self.scatter_points:
+        x = self.current_slice['datetime'].to_numpy()
+        y = self.current_slice['ccn_conc'].to_numpy()
 
         xlim = self.ax.get_xlim()
         ylim = self.ax.get_ylim()
-        # x = self.data['datetime'].to_numpy()
-        # y = self.data['ccn_conc'].to_numpy()
-        x = self.current_slice['datetime'].to_numpy()
-        y = self.current_slice['ccn_conc'].to_numpy()
 
         norm_x_click = (event.mouseevent.xdata - xlim[0]) / (xlim[1] - xlim[0])
         norm_y_click = (event.mouseevent.ydata - ylim[0]) / (ylim[1] - ylim[0])
@@ -279,18 +276,44 @@ def on_click(self, event):
         norm_y = (y - ylim[0]) / (ylim[1] - ylim[0])
 
         distances = np.hypot(norm_x - norm_x_click, norm_y - norm_y_click)
-        
-        print(f"Souris abscisse X = {event.mouseevent.xdata}, concertis en mdate = {mdates.date2num(event.mouseevent.xdata)}")
-        print(f"Souris ordonnée Y = {event.mouseevent.ydata}")
-        idx = np.argmin(distances)
-        global_idx = self.current_slice_indices[idx] 
+        idx = np.argmin(distances)  # << indice local dans current_slice
 
         print(f"Point sélectionné : ({x[idx]}, {y[idx]})")
-        self.highlight_points([idx]) 
-        self.selected_indices = [global_idx]
+
+        self.highlight_points([idx])
+        self.selected_indices = [idx]  # << RESTE EN LOCAL
         self.ax.set_xlim(xlim)
         self.ax.set_ylim(ylim)
         self.canvas_widget.draw_idle()
+
+# def on_click(self, event):
+#     if event.mouseevent.button == 1: # and event.artist == self.scatter_points:
+
+#         xlim = self.ax.get_xlim()
+#         ylim = self.ax.get_ylim()
+#         # x = self.data['datetime'].to_numpy()
+#         # y = self.data['ccn_conc'].to_numpy()
+#         x = self.current_slice['datetime'].to_numpy()
+#         y = self.current_slice['ccn_conc'].to_numpy()
+
+#         norm_x_click = (event.mouseevent.xdata - xlim[0]) / (xlim[1] - xlim[0])
+#         norm_y_click = (event.mouseevent.ydata - ylim[0]) / (ylim[1] - ylim[0])
+#         norm_x = (mdates.date2num(x) - xlim[0]) / (xlim[1] - xlim[0])
+#         norm_y = (y - ylim[0]) / (ylim[1] - ylim[0])
+
+#         distances = np.hypot(norm_x - norm_x_click, norm_y - norm_y_click)
+        
+#         print(f"Souris abscisse X = {event.mouseevent.xdata}, concertis en mdate = {mdates.date2num(event.mouseevent.xdata)}")
+#         print(f"Souris ordonnée Y = {event.mouseevent.ydata}")
+#         idx = np.argmin(distances)
+#         global_idx = self.current_slice_indices[idx] 
+
+#         print(f"Point sélectionné : ({x[idx]}, {y[idx]})")
+#         self.highlight_points([idx]) 
+#         self.selected_indices = [global_idx]
+#         self.ax.set_xlim(xlim)
+#         self.ax.set_ylim(ylim)
+#         self.canvas_widget.draw_idle()
 
 
 def clear_selection(self):
@@ -304,20 +327,81 @@ def on_rectangle_select(self, indices):
     self.selected_indices = indices
     self.highlight_points(indices)
 
+# def next_slice(self):
+#     max_date = self.data["datetime"].max()
+#     if self.current_start_date + timedelta(days=self.display_window_days) < max_date:
+#         self.current_start_date += timedelta(days=self.display_window_days)
+#         self.display_scatter_plot()
+
+# def previous_slice(self):
+#     min_date = self.data["datetime"].min()
+#     if self.current_start_date - timedelta(days=self.display_window_days) >= min_date:
+#         self.current_start_date -= timedelta(days=self.display_window_days)
+#         self.display_scatter_plot()
+
 def next_slice(self):
-    max_date = self.data["datetime"].max()
-    if self.current_start_date + timedelta(days=self.display_window_days) < max_date:
-        self.current_start_date += timedelta(days=self.display_window_days)
+    if self.current_page < len(self.pages) - 1:
+        self.current_page += 1
         self.display_scatter_plot()
 
 def previous_slice(self):
-    min_date = self.data["datetime"].min()
-    if self.current_start_date - timedelta(days=self.display_window_days) >= min_date:
-        self.current_start_date -= timedelta(days=self.display_window_days)
+    if self.current_page > 0:
+        self.current_page -= 1
         self.display_scatter_plot()
 
-def display_scatter_plot(self):
+def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
     if self.data is None:
+        self.pages = []
+        return
+
+    self.data = self.data.sort_values("datetime").reset_index(drop=True)
+
+    pages = []
+    start_idx = 0
+    last_time = self.data["datetime"].iloc[0]
+
+    for i in range(1, len(self.data)):
+        current_time = self.data["datetime"].iloc[i]
+        gap = (current_time - last_time).total_seconds() / 60
+        if ((i - start_idx >= min_points) and (gap >= max_gap_minutes)) or (gap > 30):
+            pages.append((start_idx, i))
+            start_idx = i
+
+        last_time = current_time
+
+    pages.append((start_idx, len(self.data)))  # dernière page
+    self.pages = pages
+    self.current_page = 0
+
+def add_color_legend(self):
+    if hasattr(self, 'legend_frame'):
+        self.legend_frame.destroy()  # Supprime ancienne légende si elle existe
+
+    self.legend_frame = tk.Frame(self.inner_frame)
+    self.legend_frame.pack(side=tk.TOP, anchor="w", padx=10, pady=5)
+
+    tk.Label(self.legend_frame, text="Légende des couleurs :", font=("Arial", 10, "bold")).pack(anchor="w")
+
+    legend_colors = {
+        0.1: "purple",
+        0.2: "blue",
+        0.3: "green",
+        0.4: "yellow",
+        0.5: "red"
+    }
+
+    for val, color in legend_colors.items():
+        item = tk.Frame(self.legend_frame)
+        item.pack(anchor="w", pady=1)
+        canvas = tk.Canvas(item, width=15, height=15)
+        canvas.create_oval(2, 2, 13, 13, fill=color, outline="black")
+        canvas.pack(side=tk.LEFT)
+        tk.Label(item, text=f"Sursaturation {val}", font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
+    
+def display_scatter_plot(self):
+    if hasattr(self, 'scatter_points'):
+        self.scatter_points.remove()
+    if self.data is None or not hasattr(self, 'pages') or not self.pages:
         return
     if "datetime" not in self.data.columns or "ccn_conc" not in self.data.columns:
         messagebox.showwarning("Visualisation", "Colonnes 'datetime' et 'ccn_conc' requises")
@@ -326,21 +410,11 @@ def display_scatter_plot(self):
     self.data["datetime"] = pd.to_datetime(self.data["datetime"], errors='coerce')
     self.data = self.data.dropna(subset=["datetime", "ccn_conc"])
 
-    # Initialisation de la pagination si non définie
-    if not hasattr(self, "display_window_days"):
-        self.display_window_days = 0.25
+    # Récupération de la tranche en cours
+    start, end = self.pages[self.current_page]
+    data_slice = self.data.iloc[start:end]
 
-    if not hasattr(self, "current_start_date") or self.current_start_date is None:
-        self.current_start_date = self.data["datetime"].min()
-
-    end_date = self.current_start_date + timedelta(days=self.display_window_days)
-    data_slice = self.data[(self.data["datetime"] >= self.current_start_date) & 
-                           (self.data["datetime"] < end_date)]
-
-    self.x_floats = mdates.date2num(data_slice["datetime"])
-    self.y_vals = data_slice["ccn_conc"].to_numpy()
-
-    # NE PAS reset_index pour garder les indices originaux dans self.data
+    # NE PAS reset_index pour garder les indices globaux
     self.current_slice = data_slice.copy()
     self.current_slice_indices = list(data_slice.index)  # indices globaux dans self.data
 
@@ -348,11 +422,12 @@ def display_scatter_plot(self):
         widget.destroy()
 
     num_points = len(data_slice)
-    height = max(20, num_points/500)
+    height = max(20, num_points / 500)
     fig = Figure(figsize=(height, 15))
     self.ax = fig.add_subplot(111)
     fig.tight_layout()
 
+    # Couleurs selon la sursaturation
     colors = data_slice["ccn_sursaturation"].map({
         0.1: "purple",
         0.2: "blue",
@@ -370,9 +445,11 @@ def display_scatter_plot(self):
     )
 
     self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M:%S'))
-    self.ax.xaxis.set_major_locator(MaxNLocator(min(1000, max(10, num_points / 500))))
+    self.ax.xaxis.set_major_locator(MaxNLocator(min(1000, max(10, num_points // 500))))
 
-    self.ax.set_title(f"Affichage du {self.current_start_date.date()} au {end_date.date()}")
+    date_min = data_slice["datetime"].min().strftime('%d/%m/%Y %H:%M:%S')
+    date_max = data_slice["datetime"].max().strftime('%d/%m/%Y %H:%M:%S')
+    self.ax.set_title(f"Page {self.current_page + 1}/{len(self.pages)} — du {date_min} au {date_max}")
     self.ax.grid(True)
     fig.autofmt_xdate(rotation=45)
     fig.subplots_adjust(bottom=0.25)
@@ -382,6 +459,7 @@ def display_scatter_plot(self):
     self.canvas_widget.get_tk_widget().pack(fill=tk.X, expand=True)
     self.canvas_widget.mpl_connect('pick_event', self.on_click)
 
+    # Rectangle selector
     if hasattr(self, 'rs') and self.rs is not None:
         self.rs.set_active(False)
         del self.rs
@@ -392,3 +470,5 @@ def display_scatter_plot(self):
         data_slice,
         self.on_rectangle_select
     )
+
+    self.add_color_legend()
