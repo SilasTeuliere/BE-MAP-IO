@@ -6,7 +6,7 @@ from .graph_utils import clear_data, delete_selected_points, undo_all, undo_last
 from .graph_utils import show_about, show_shortcuts, show_statistics
 
 def setup_menu(self):
-    menu_bar = tk.Menu(self.root)
+    menu_bar = tk.Menu(self.root, tearoff=0)
 
     file_menu = tk.Menu(menu_bar, tearoff=0)
     file_menu.add_command(label="Importer un fichier CSV", command=lambda: load_csv(self), accelerator="Ctrl+O")

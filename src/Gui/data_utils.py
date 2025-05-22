@@ -2,7 +2,6 @@ import os
 from tkinter import filedialog, messagebox
 from .graph_utils import display_scatter_plot
 from .graph_utils import create_logical_pages
-from datetime import timedelta
 from src.data_loader import load_data
 
 

@@ -98,46 +98,9 @@ def undo_all(self):
         messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
 
-# def open_multiplier_window(self):
-#     """
-#     Affiche une fenêtre pour appliquer un coefficient multiplicateur aux colonnes numériques.
-
-#     Enregistre l'état actuel pour permettre une restauration.
-#     """
-
-#     multiplier_window = tk.Toplevel()
-#     multiplier_window.title("Coefficient Multiplicateur")
-#     multiplier_window.geometry("400x200")
-#     label = tk.Label(multiplier_window, text="Indiquer le coefficient multiplicateur :", font=("Arial", 12))
-#     label.pack(pady=10)
-#     coeff_entry = tk.Entry(multiplier_window, font=("Arial", 12), width=10)
-#     coeff_entry.pack(pady=5)
-
-#     def validate_multiplier():
-#         coeff = coeff_entry.get()
-#         try:
-#             coeff = float(coeff)
-#             if self.data is not None:
-#                 previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
-#                 self.history.append((self.data.copy(), previous_deleted))
-
-#                 for col in self.data.columns:
-#                     if col != "datetime" and pd.api.types.is_numeric_dtype(self.data[col]):
-#                         self.data[col] = self.data[col] * coeff
-
-#                 self.display_scatter_plot()
-#             multiplier_window.destroy()
-#         except ValueError:
-#             messagebox.showerror("Erreur", "Veuillez entrer un nombre valide.")
-#             coeff_entry.delete(0, tk.END)
-
-#     validate_button = tk.Button(multiplier_window, text="Valider", command=validate_multiplier)
-#     validate_button.pack(pady=10)
-
-
 def open_multiplier_window(self):
     """
-    Affiche une fenêtre pour appliquer un coefficient multiplicateur a la colonne Ccn_conc.
+    Affiche une fenêtre pour appliquer un coefficient multiplicateur aux colonnes numériques.
 
     Enregistre l'état actuel pour permettre une restauration.
     """
@@ -149,6 +112,7 @@ def open_multiplier_window(self):
     label.pack(pady=10)
     coeff_entry = tk.Entry(multiplier_window, font=("Arial", 12), width=10)
     coeff_entry.pack(pady=5)
+
     def validate_multiplier():
         coeff = coeff_entry.get()
         try:
@@ -157,9 +121,9 @@ def open_multiplier_window(self):
                 previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
                 self.history.append((self.data.copy(), previous_deleted))
 
-                # Only modify the 'ccn_conc' column if it exists and is numeric
-                if "ccn_conc" in self.data.columns and pd.api.types.is_numeric_dtype(self.data["ccn_conc"]):
-                    self.data["ccn_conc"] = self.data["ccn_conc"] * coeff
+                for col in self.data.columns:
+                    if col != "datetime" and pd.api.types.is_numeric_dtype(self.data[col]):
+                        self.data[col] = self.data[col] * coeff
 
                 self.display_scatter_plot()
             multiplier_window.destroy()
@@ -169,6 +133,42 @@ def open_multiplier_window(self):
 
     validate_button = tk.Button(multiplier_window, text="Valider", command=validate_multiplier)
     validate_button.pack(pady=10)
+
+
+# def open_multiplier_window(self):
+#     """
+#     Affiche une fenêtre pour appliquer un coefficient multiplicateur a la colonne Ccn_conc.
+
+#     Enregistre l'état actuel pour permettre une restauration.
+#     """
+
+#     multiplier_window = tk.Toplevel()
+#     multiplier_window.title("Coefficient Multiplicateur")
+#     multiplier_window.geometry("400x200")
+#     label = tk.Label(multiplier_window, text="Indiquer le coefficient multiplicateur :", font=("Arial", 12))
+#     label.pack(pady=10)
+#     coeff_entry = tk.Entry(multiplier_window, font=("Arial", 12), width=10)
+#     coeff_entry.pack(pady=5)
+#     def validate_multiplier():
+#         coeff = coeff_entry.get()
+#         try:
+#             coeff = float(coeff)
+#             if self.data is not None:
+#                 previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
+#                 self.history.append((self.data.copy(), previous_deleted))
+
+#                 # Only modify the 'ccn_conc' column if it exists and is numeric
+#                 if "ccn_conc" in self.data.columns and pd.api.types.is_numeric_dtype(self.data["ccn_conc"]):
+#                     self.data["ccn_conc"] = self.data["ccn_conc"] * coeff
+
+#                 self.display_scatter_plot()
+#             multiplier_window.destroy()
+#         except ValueError:
+#             messagebox.showerror("Erreur", "Veuillez entrer un nombre valide.")
+#             coeff_entry.delete(0, tk.END)
+
+#     validate_button = tk.Button(multiplier_window, text="Valider", command=validate_multiplier)
+#     validate_button.pack(pady=10)
 
 
 def invalidate_series(self):
