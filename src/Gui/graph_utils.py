@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.dates as mdates
 import pandas as pd
 import os
-from datetime import timedelta
+import math
 from tkinter import messagebox
 from tkinter import Toplevel, scrolledtext
 from matplotlib.figure import Figure
@@ -256,10 +256,13 @@ def zoom_plot(self, factor, event = None):
     self.canvas_widget.draw_idle()
 
 def on_scroll_zoom(self, event):
-    if event.button == 'up':
-        self.zoom_plot(0.8, event)
-    elif event.button == 'down':
-        self.zoom_plot(1.2, event) 
+    ctrl_pressed = event.key == 'control' or event.key == 'cmd'
+
+    if ctrl_pressed:
+        if event.button == 'up':
+            self.zoom_plot(0.8, event)
+        elif event.button == 'down':
+            self.zoom_plot(1.2, event)
 
 def highlight_points(self, indices):
     if self.highlight:
@@ -332,11 +335,14 @@ def next_slice(self):
     if self.current_page < len(self.pages) - 1:
         self.current_page += 1
         self.display_scatter_plot()
+        self.next_button.config(state="disabled" if self.current_page == len(self.pages)-1 else "normal")
+        self.prev_button.config(state="normal")
 
 def previous_slice(self):
     if self.current_page > 0:
         self.current_page -= 1
         self.display_scatter_plot()
+        self.prev_button.config(state="disabled" if self.current_page == 0 else "normal")
 
 def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
     if self.data is None:
@@ -362,6 +368,7 @@ def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
     self.pages = pages
     self.current_page = 0
 
+
 def add_color_legend(self):
     if hasattr(self, 'legend_frame'):
         self.legend_frame.destroy()
@@ -374,9 +381,14 @@ def add_color_legend(self):
     legend_colors = {
         0.1: "purple",
         0.2: "blue",
-        0.3: "green",
-        0.4: "yellow",
-        0.5: "red"
+        0.3: "cyan",
+        0.4: "green",
+        0.5: "yellow",
+        0.6: "orange",
+        0.7: "pink",
+        0.8: "red",
+        0.9: "brown",
+        1.0: "black"
     }
 
     for val, color in legend_colors.items():
@@ -395,6 +407,9 @@ def display_scatter_plot(self):
     if "datetime" not in self.data.columns or "ccn_conc" not in self.data.columns:
         messagebox.showwarning("Visualisation", "Colonnes 'datetime' et 'ccn_conc' requises")
         return
+
+    if(len(self.pages) > 1):
+        self.next_button.config(state="normal")
 
     self.data["datetime"] = pd.to_datetime(self.data["datetime"], errors='coerce')
     self.data = self.data.dropna(subset=["datetime", "ccn_conc"])
@@ -415,13 +430,18 @@ def display_scatter_plot(self):
     fig.tight_layout()
 
     colors = data_slice["ccn_sursaturation"].map({
-        0.1: "purple",
-        0.2: "blue",
-        0.3: "green",
-        0.4: "yellow",
-        0.5: "red"
+    0.1: "purple",
+    0.2: "blue",
+    0.3: "cyan",
+    0.4: "green",
+    0.5: "yellow",
+    0.6: "orange",
+    0.7: "pink",
+    0.8: "red",
+    0.9: "brown",
+    1.0: "black"
     }).fillna("gray")
-
+    
     self.scatter_points = self.ax.scatter(
         data_slice["datetime"],
         data_slice["ccn_conc"],

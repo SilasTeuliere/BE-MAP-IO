@@ -33,6 +33,11 @@ def main():
     delete_button.grid(row=0, column=2, padx=10)
     next_button.grid(row=0, column=3, padx=10)
 
+    app.prev_button = prev_button
+    app.next_button = next_button
+    app.prev_button.config(state="disabled")
+    app.next_button.config(state="disabled")
+
     root.mainloop()
 
 if __name__ == "__main__":
