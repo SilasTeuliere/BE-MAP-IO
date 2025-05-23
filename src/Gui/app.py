@@ -43,3 +43,7 @@ class CCNDataApp:
         self.add_color_legend = types.MethodType(add_color_legend, self)
         self.create_logical_pages = types.MethodType(create_logical_pages, self)
         self.on_scroll_zoom = types.MethodType(on_scroll_zoom, self)
+        self.has_next_day = types.MethodType(has_next_day, self)
+        self.has_previous_day = types.MethodType(has_previous_day, self)
+        self.update_navigation_buttons_state = types.MethodType(update_navigation_buttons_state, self)
+        self.update_page_display = types.MethodType(update_page_display, self)

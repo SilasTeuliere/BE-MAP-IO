@@ -98,46 +98,9 @@ def undo_all(self):
         messagebox.showwarning("Annulation", "Aucune action à annuler.")
 
 
-def open_multiplier_window(self):
-    """
-    Affiche une fenêtre pour appliquer un coefficient multiplicateur aux colonnes numériques.
-
-    Enregistre l'état actuel pour permettre une restauration.
-    """
-
-    multiplier_window = tk.Toplevel()
-    multiplier_window.title("Coefficient Multiplicateur")
-    multiplier_window.geometry("400x200")
-    label = tk.Label(multiplier_window, text="Indiquer le coefficient multiplicateur :", font=("Arial", 12))
-    label.pack(pady=10)
-    coeff_entry = tk.Entry(multiplier_window, font=("Arial", 12), width=10)
-    coeff_entry.pack(pady=5)
-
-    def validate_multiplier():
-        coeff = coeff_entry.get()
-        try:
-            coeff = float(coeff)
-            if self.data is not None:
-                previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
-                self.history.append((self.data.copy(), previous_deleted))
-
-                for col in self.data.columns:
-                    if col != "datetime" and pd.api.types.is_numeric_dtype(self.data[col]):
-                        self.data[col] = self.data[col] * coeff
-
-                self.display_scatter_plot()
-            multiplier_window.destroy()
-        except ValueError:
-            messagebox.showerror("Erreur", "Veuillez entrer un nombre valide.")
-            coeff_entry.delete(0, tk.END)
-
-    validate_button = tk.Button(multiplier_window, text="Valider", command=validate_multiplier)
-    validate_button.pack(pady=10)
-
-
 # def open_multiplier_window(self):
 #     """
-#     Affiche une fenêtre pour appliquer un coefficient multiplicateur a la colonne Ccn_conc.
+#     Affiche une fenêtre pour appliquer un coefficient multiplicateur aux colonnes numériques.
 
 #     Enregistre l'état actuel pour permettre une restauration.
 #     """
@@ -149,6 +112,7 @@ def open_multiplier_window(self):
 #     label.pack(pady=10)
 #     coeff_entry = tk.Entry(multiplier_window, font=("Arial", 12), width=10)
 #     coeff_entry.pack(pady=5)
+
 #     def validate_multiplier():
 #         coeff = coeff_entry.get()
 #         try:
@@ -157,9 +121,9 @@ def open_multiplier_window(self):
 #                 previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
 #                 self.history.append((self.data.copy(), previous_deleted))
 
-#                 # Only modify the 'ccn_conc' column if it exists and is numeric
-#                 if "ccn_conc" in self.data.columns and pd.api.types.is_numeric_dtype(self.data["ccn_conc"]):
-#                     self.data["ccn_conc"] = self.data["ccn_conc"] * coeff
+#                 for col in self.data.columns:
+#                     if col != "datetime" and pd.api.types.is_numeric_dtype(self.data[col]):
+#                         self.data[col] = self.data[col] * coeff
 
 #                 self.display_scatter_plot()
 #             multiplier_window.destroy()
@@ -171,20 +135,79 @@ def open_multiplier_window(self):
 #     validate_button.pack(pady=10)
 
 
+def open_multiplier_window(self):
+    """
+    Affiche une fenêtre pour appliquer un coefficient multiplicateur a la colonne Ccn_conc.
+
+    Enregistre l'état actuel pour permettre une restauration.
+    """
+
+    multiplier_window = tk.Toplevel()
+    multiplier_window.title("Coefficient Multiplicateur")
+    multiplier_window.geometry("400x200")
+    label = tk.Label(multiplier_window, text="Indiquer le coefficient multiplicateur :", font=("Arial", 12))
+    label.pack(pady=10)
+    coeff_entry = tk.Entry(multiplier_window, font=("Arial", 12), width=10)
+    coeff_entry.pack(pady=5)
+    def validate_multiplier():
+        coeff = coeff_entry.get()
+        try:
+            coeff = float(coeff)
+            if self.data is not None:
+                previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
+                self.history.append((self.data.copy(), previous_deleted))
+
+                # Only modify the 'ccn_conc' column if it exists and is numeric
+                if "ccn_conc" in self.data.columns and pd.api.types.is_numeric_dtype(self.data["ccn_conc"]):
+                    self.data["ccn_conc"] = self.data["ccn_conc"] * coeff
+
+                self.display_scatter_plot()
+            multiplier_window.destroy()
+        except ValueError:
+            messagebox.showerror("Erreur", "Veuillez entrer un nombre valide.")
+            coeff_entry.delete(0, tk.END)
+
+    validate_button = tk.Button(multiplier_window, text="Valider", command=validate_multiplier)
+    validate_button.pack(pady=10)
+
+
 def invalidate_series(self):
     """
-    Supprime tous les points de la page courante sans sélection manuelle.
-
-    Utilise `delete_selected_points` en simulant une sélection complète.
+    Supprime tous les points de la page actuelle, mais conserve la page dans l'affichage.
     """
-
-    if self.current_slice is None or self.current_slice.empty:
+    if self.data is None or not hasattr(self, "initial_pages") or not self.initial_pages:
         messagebox.showinfo("Suppression", "Aucune donnée à supprimer dans cette page.")
         return
 
-    self.selected_indices = list(range(len(self.current_slice)))
+    start, end = self.initial_pages[self.current_page]
 
-    self.delete_selected_points()
+    if start >= len(self.data):
+        messagebox.showinfo("Suppression", "Page déjà vide.")
+        return
+
+    # Calcul des indices globaux valides dans self.data
+    indices_to_delete = [i for i in range(start, min(end, len(self.data)))]
+
+    if not indices_to_delete:
+        messagebox.showinfo("Suppression", "Aucun point à supprimer dans cette page.")
+        return
+
+    previous_deleted = getattr(self, 'deleted_data', pd.DataFrame()).copy()
+    self.history.append((self.data.copy(), previous_deleted))
+
+    deleted = self.data.iloc[indices_to_delete]
+    deleted_file_path = os.path.splitext(self.file_path)[0] + "_deleted.csv"
+
+    try:
+        old_deleted = pd.read_csv(deleted_file_path)
+    except (FileNotFoundError, pd.errors.EmptyDataError):
+        old_deleted = pd.DataFrame()
+
+    self.deleted_data = pd.concat([old_deleted, deleted], ignore_index=True)
+    self.deleted_data.to_csv(deleted_file_path, index=False)
+
+    self.data = self.data.drop(index=deleted.index).reset_index(drop=True)
+    self.display_scatter_plot()
 
 
 def show_statistics(self):
@@ -367,18 +390,166 @@ def on_rectangle_select(self, indices):
     self.selected_indices = indices
     self.highlight_points(indices)
 
+def has_next_day(self):
+    if not self.initial_pages or self.current_page >= len(self.initial_pages) - 1 or self.data.empty:
+        return False
+
+    current_start, _ = self.initial_pages[self.current_page]
+
+    if current_start >= len(self.data):
+        return False
+
+    current_date = self.data.iloc[current_start]["datetime"].date()
+
+    for start, _ in self.initial_pages[self.current_page + 1:]:
+        if start < len(self.data):
+            page_date = self.data.iloc[start]["datetime"].date()
+            if page_date > current_date:
+                return True
+
+    return False
+
+def has_previous_day(self):
+    if not self.initial_pages or self.current_page == 0 or self.data.empty:
+        return False
+
+    current_start, _ = self.initial_pages[self.current_page]
+
+    if current_start >= len(self.data):
+        return False
+
+    current_date = self.data.iloc[current_start]["datetime"].date()
+
+    for start, _ in reversed(self.initial_pages[:self.current_page]):
+        if start < len(self.data):
+            page_date = self.data.iloc[start]["datetime"].date()
+            if page_date < current_date:
+                return True
+
+    return False
+
 def next_slice(self):
     if self.current_page < len(self.pages) - 1:
         self.current_page += 1
         self.display_scatter_plot()
-        self.next_button.config(state="disabled" if self.current_page == len(self.pages)-1 else "normal")
-        self.prev_button.config(state="normal")
 
 def previous_slice(self):
     if self.current_page > 0:
         self.current_page -= 1
         self.display_scatter_plot()
-        self.prev_button.config(state="disabled" if self.current_page == 0 else "normal")
+
+
+def go_first(self):
+    self.current_page = 0
+    self.display_scatter_plot()
+    
+
+def go_last(self):
+    self.current_page = len(self.pages) - 1
+    self.display_scatter_plot()
+
+def go_to_previous_day(self):
+    if not self.pages or self.current_page <= 0:
+        return
+
+    current_start, _ = self.pages[self.current_page]
+    current_date = self.data.iloc[current_start]["datetime"].date()
+
+    for i in range(self.current_page - 1, -1, -1):
+        start_i, _ = self.pages[i]
+        page_date = self.data.iloc[start_i]["datetime"].date()
+        if page_date < current_date:
+            self.current_page = i
+            self.display_scatter_plot()
+            return
+
+def go_to_next_day(self):
+    if not self.pages or self.current_page >= len(self.pages) - 1:
+        return
+    current_start, _ = self.pages[self.current_page]
+    current_date = self.data.iloc[current_start]["datetime"].date()
+    for i in range(self.current_page + 1, len(self.pages)):
+        start_i, _ = self.pages[i]
+        page_date = self.data.iloc[start_i]["datetime"].date()
+        if page_date > current_date:
+            self.current_page = i
+            self.display_scatter_plot()
+            return
+
+
+def go_to_page(self):
+    """
+    Ouvre une fenêtre pour entrer un numéro de page et y accéder.
+    """
+    if not self.pages:
+        messagebox.showinfo("Navigation", "Aucune donnée chargée.")
+        return
+    go_window = tk.Toplevel()
+    go_window.title("Aller à une page")
+    go_window.geometry("300x150")
+    go_window.resizable(False, False)
+    label = tk.Label(go_window, text=f"Entrez un numéro de page (1 à {len(self.pages)}) :", font=("Arial", 11))
+    label.pack(pady=10)
+    page_entry = tk.Entry(go_window, font=("Arial", 12), justify="center")
+    page_entry.pack()
+    def validate():
+        try:
+            page = int(page_entry.get()) - 1
+            if 0 <= page < len(self.pages):
+                self.current_page = page
+                self.display_scatter_plot()
+                go_window.destroy()
+            else:
+                messagebox.showwarning("Erreur", f"La page doit être comprise entre 1 et {len(self.pages)}.")
+        except ValueError:
+            messagebox.showerror("Erreur", "Veuillez entrer un numéro de page valide.")
+            page_entry.delete(0, tk.END)
+    validate_button = tk.Button(go_window, text="Valider", command=validate)
+    validate_button.pack(pady=10)
+    page_entry.bind("<Return>", lambda event: validate())
+    page_entry.focus()
+
+
+def update_navigation_buttons_state(self):
+    """
+    Active ou désactive les boutons de navigation en fonction de la position actuelle dans les pages
+    et des jours disponibles avant/après.
+    """
+
+    if not hasattr(self, 'start_button'): return
+
+    if self.current_page == 0:
+        self.start_button.config(state="disabled")
+        self.prev_button.config(state="disabled")
+    else:
+        self.start_button.config(state="normal")
+        self.prev_button.config(state="normal")
+
+    if self.current_page >= len(self.pages) - 1:
+        self.end_button.config(state="disabled")
+        self.next_button.config(state="disabled")
+    else:
+        self.end_button.config(state="normal")
+        self.next_button.config(state="normal")
+
+    if self.has_previous_day():
+        self.day_prev_button.config(state="normal")
+    else:
+        self.day_prev_button.config(state="disabled")
+
+    if self.has_next_day():
+        self.day_next_button.config(state="normal")
+    else:
+        self.day_next_button.config(state="disabled")
+
+    if hasattr(self, "go_to_page_button"):
+         state = "normal" if self.pages else "disabled"
+         self.go_to_page_button.config(state=state)
+
+
+def update_page_display(self):
+    self.page_entry.delete(0, tk.END)
+    self.page_entry.insert(0, str(self.current_page + 1))
 
 def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
     if self.data is None:
@@ -402,6 +573,7 @@ def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
 
     pages.append((start_idx, len(self.data)))
     self.pages = pages
+    self.initial_pages = pages.copy()
     self.current_page = 0
 
 
@@ -444,14 +616,19 @@ def display_scatter_plot(self):
         messagebox.showwarning("Visualisation", "Colonnes 'datetime' et 'ccn_conc' requises")
         return
 
-    if(len(self.pages) > 1):
-        self.next_button.config(state="normal")
+    self.update_navigation_buttons_state()
 
     self.data["datetime"] = pd.to_datetime(self.data["datetime"], errors='coerce')
     self.data = self.data.dropna(subset=["datetime", "ccn_conc"])
 
-    start, end = self.pages[self.current_page]
+    start, end = self.initial_pages[self.current_page]
     data_slice = self.data.iloc[start:end]
+    if data_slice.empty:
+        self.ax.text(0.5, 0.5, "Page vide", fontsize=16, ha='center', va='center', transform=self.ax.transAxes)
+        self.canvas_widget = FigureCanvasTkAgg(fig, master=self.inner_frame)
+        self.canvas_widget.draw()
+        self.canvas_widget.get_tk_widget().pack(fill=tk.X, expand=True)
+        return
 
     self.current_slice = data_slice.copy()
     self.current_slice_indices = list(data_slice.index)
@@ -459,9 +636,13 @@ def display_scatter_plot(self):
     for widget in self.inner_frame.winfo_children():
         widget.destroy()
 
+
+    screen_height = self.inner_frame.winfo_screenheight()
+    dpi = 100
+    fig_height = screen_height / dpi
     num_points = len(data_slice)
-    height = max(20, num_points / 500)
-    fig = Figure(figsize=(height, 15))
+    fig_width = max(20, num_points / 500)
+    fig = Figure(figsize=(fig_width, fig_height))
     self.ax = fig.add_subplot(111)
     fig.tight_layout()
 
