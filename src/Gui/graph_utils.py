@@ -556,7 +556,7 @@ def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
         self.pages = []
         return
 
-    self.data = self.data.sort_values("datetime").reset_index(drop=True)
+    self.data = self.data.sort_values("datetime")
 
     pages = []
     start_idx = 0
@@ -568,13 +568,24 @@ def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
         if ((i - start_idx >= min_points) and (gap >= max_gap_minutes)) or (gap > 30):
             pages.append((start_idx, i))
             start_idx = i
-
         last_time = current_time
 
     pages.append((start_idx, len(self.data)))
     self.pages = pages
-    self.initial_pages = pages.copy()
-    self.current_page = 0
+
+    self.pages = [
+        (start, end)
+        for start, end in pages
+        if not self.data.iloc[start:end].empty
+    ]
+
+    if not hasattr(self, "initial_pages") or not self.initial_pages:
+        self.initial_pages = pages.copy()
+
+    if not hasattr(self, "current_page"):
+        self.current_page = 0
+    else:
+        self.current_page = min(self.current_page, len(self.initial_pages) - 1)
 
 
 def add_color_legend(self):
@@ -608,8 +619,11 @@ def add_color_legend(self):
         tk.Label(item, text=f"Sursaturation {val}", font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
     
 def display_scatter_plot(self):
-    if hasattr(self, 'scatter_points'):
-        self.scatter_points.remove()
+    try:
+        if hasattr(self, 'scatter_points'):
+            self.scatter_points.remove()
+    except ValueError:
+        pass
     if self.data is None or not hasattr(self, 'pages') or not self.pages:
         return
     if "datetime" not in self.data.columns or "ccn_conc" not in self.data.columns:
@@ -621,10 +635,20 @@ def display_scatter_plot(self):
     self.data["datetime"] = pd.to_datetime(self.data["datetime"], errors='coerce')
     self.data = self.data.dropna(subset=["datetime", "ccn_conc"])
 
+
     start, end = self.initial_pages[self.current_page]
-    data_slice = self.data.iloc[start:end]
+    index_range = self.data.index[start:end]
+    data_slice = self.data.loc[index_range]
     if data_slice.empty:
+        for widget in self.inner_frame.winfo_children():
+            widget.destroy()
+
+        fig = Figure(figsize=(8, 4))
+        self.ax = fig.add_subplot(111)
         self.ax.text(0.5, 0.5, "Page vide", fontsize=16, ha='center', va='center', transform=self.ax.transAxes)
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+
         self.canvas_widget = FigureCanvasTkAgg(fig, master=self.inner_frame)
         self.canvas_widget.draw()
         self.canvas_widget.get_tk_widget().pack(fill=tk.X, expand=True)
