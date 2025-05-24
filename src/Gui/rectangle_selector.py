@@ -9,12 +9,11 @@ class ManualRectangleSelector:
         self.ax = ax
         self.canvas_widget = canvas_widget
         self.data = data
-        self.on_select_callback = on_select_callback  # Fonction à appeler avec les indices sélectionnés
+        self.on_select_callback = on_select_callback
 
         self.start_point = None
         self.current_rect_patch = None
 
-        # Connexion des événements
         self.canvas_widget.mpl_connect("button_press_event", self.on_press)
         self.canvas_widget.mpl_connect("motion_notify_event", self.on_motion)
         self.canvas_widget.mpl_connect("button_release_event", self.on_release)
@@ -69,7 +68,6 @@ class ManualRectangleSelector:
             self.current_rect_patch = None
             self.canvas_widget.draw_idle()
 
-        # Appeler la fonction de callback
         if indices:
             self.on_select_callback(indices)
         else:

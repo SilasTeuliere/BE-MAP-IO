@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.dates as mdates
 import pandas as pd
 import os
-import math
 from tkinter import messagebox
 from tkinter import Toplevel, scrolledtext
 from matplotlib.figure import Figure
