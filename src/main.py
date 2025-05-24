@@ -29,7 +29,7 @@ def main():
     next_button = tk.Button(button_frame, text="Suivant ⟶", command=lambda: next_slice(app))
     start_button = tk.Button(button_frame, text="⏮ Début", command=lambda: go_first(app))
     day_prev_button = tk.Button(button_frame, text="◀ Jour précédent", command=lambda: go_to_previous_day(app))
-    go_to_page_button = tk.Button(button_frame, text="Aller à la page", command=lambda: go_to_page(app))
+    go_to_page_button = tk.Button(button_frame, text="Choix page", command=lambda: go_to_page(app))
     day_next_button = tk.Button(button_frame, text="Jour suivant ▶", command=lambda: go_to_next_day(app))
     end_button = tk.Button(button_frame, text="⏭ Fin", command=lambda: go_last(app))
     
