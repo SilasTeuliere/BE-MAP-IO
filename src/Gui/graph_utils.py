@@ -249,10 +249,10 @@ def show_shortcuts(self):
         "Appliquer un coefficient multiplicateur :  Ctrl + P / Cmd + P sur Mac\n"
         "Annuler la dernière modification :  Ctrl + Z / Cmd + Z sur Mac\n"
         "Annuler toutes les  modifications :  Ctrl + Shift + Z / Cmd + Shift + Z sur Mac\n"
-        "Invalider toute la série de données :  Ctrl + I / Cmd + I sur Mac\n"
+        "Supprime page :  Ctrl + I / Cmd + I sur Mac\n"
         "Affichage Statistique :  Ctrl + A / Cmd + A sur Mac\n"
-        "Zoom + : Ctrl + '+' ou Ctrl + '=' / Cmd + '+' ou Cmd + '='\n"
-        "Zoom - : Ctrl + '-' / Cmd + '-'\n"
+        "Zoom + : Ctrl + '+' ou Ctrl + '=' / Cmd + '+' ou Cmd + '=' Ctrl/Cmd + Up(molette Souris)\n"
+        "Zoom - : Ctrl + '-' / Cmd + '-' / Ctrl/Cmd + Down(molette Souris)\n"
     )
 
     text_widget = tk.Text(shortcut_window, wrap=tk.WORD, font=("Arial", 12), padx=10, pady=10)

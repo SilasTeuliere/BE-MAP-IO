@@ -21,7 +21,7 @@ def setup_menu(self):
     edit_menu.add_command(label="Annuler toutes les modifications", command=lambda: undo_all(self), accelerator="Ctrl+Shift+Z")
     edit_menu.add_command(label="Annuler la dernière modification", command=lambda: undo_last(self), accelerator="Ctrl+Z")
     edit_menu.add_command(label="Rajouter coefficient multiplicateur", command=lambda: open_multiplier_window(self), accelerator="Ctrl+P")
-    edit_menu.add_command(label="Invalider toute la série de données", command=lambda: invalidate_series(self), accelerator="Ctrl+I")
+    edit_menu.add_command(label="Supprimer page", command=lambda: invalidate_series(self), accelerator="Ctrl+I")
     menu_bar.add_cascade(label="Édition", menu=edit_menu)
 
     view_menu = tk.Menu(menu_bar, tearoff=0)
