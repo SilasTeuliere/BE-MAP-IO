@@ -578,8 +578,8 @@ def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
         if not self.data.iloc[start:end].empty
     ]
 
-    if not hasattr(self, "initial_pages") or not self.initial_pages:
-        self.initial_pages = pages.copy()
+    self.initial_pages = self.pages.copy()
+    self.current_page = 0
 
     if not hasattr(self, "current_page"):
         self.current_page = 0
@@ -644,10 +644,12 @@ def display_scatter_plot(self):
 
         fig = Figure(figsize=(8, 4))
         self.ax = fig.add_subplot(111)
-        self.ax.text(0.5, 0.5, "Page vide", fontsize=16, ha='center', va='center', transform=self.ax.transAxes)
-        self.ax.set_xticks([])
-        self.ax.set_yticks([])
-
+        self.ax.set_xlabel("Date et heure")
+        self.ax.set_ylabel("ccn_conc")
+        self.ax.grid(True)
+        date_min = self.data["datetime"].iloc[start].strftime('%d/%m/%Y %H:%M:%S') if start < len(self.data) else "?"
+        date_max = self.data["datetime"].iloc[end-1].strftime('%d/%m/%Y %H:%M:%S') if end-1 < len(self.data) else "?"
+        self.ax.set_title(f"Page {self.current_page + 1}/{len(self.pages)} — du {date_min} au {date_max}")
         self.canvas_widget = FigureCanvasTkAgg(fig, master=self.inner_frame)
         self.canvas_widget.draw()
         self.canvas_widget.get_tk_widget().pack(fill=tk.X, expand=True)
