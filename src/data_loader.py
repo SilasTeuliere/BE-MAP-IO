@@ -25,5 +25,12 @@ def load_data(file_path) :
         df_filtered = filter_data(df)
         return df_filtered
     except Exception as e:
+        import traceback
+        from tkinter import messagebox
         print(f"erreur chargement des donnés: {e}")
+        traceback.print_exc()
+        messagebox.showerror("Erreur", f"Erreur lors du chargement des données :\n{e}")
         return None
+    # except Exception as e:
+    #     print(f"erreur chargement des donnés: {e}")
+    #     return None

@@ -2,13 +2,15 @@ import os
 from tkinter import filedialog, messagebox
 from .graph_utils import display_scatter_plot
 from .graph_utils import create_logical_pages
-from src.data_loader import load_data
+from data_loader import load_data
 
 
 def load_csv(self):
     file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
     if file_path:
         self.file_path = file_path
+        print(f"Fichier sélectionné : {file_path}")
+        print(f"Existe ? {os.path.exists(file_path)}")
         self.data = load_data(file_path)
         if self.data is None:
             messagebox.showwarning("Chargement", "Échec du chargement des données")

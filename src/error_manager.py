@@ -1,10 +1,19 @@
 from datetime import datetime
 import json
 import os
+import sys
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+def get_base_dir():
+    if getattr(sys, 'frozen', False): 
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+#BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = get_base_dir()
 DICO_PATH = os.path.join(BASE_DIR, "data", "dico_error.json")
 ERROR_LOG_FILE = None
+
+
 
 def init_error_log_file():
     """

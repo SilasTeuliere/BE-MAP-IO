@@ -14,7 +14,7 @@ def main():
     root.title("ClearCCNData")
     root.geometry("900x700")
 
-    logo_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'logo.png')
+    logo_path = os.path.join(os.path.dirname(__file__), 'image', 'logo.png')
     root.iconphoto(False, tk.PhotoImage(file=logo_path))
 
     app = CCNDataApp(root)
