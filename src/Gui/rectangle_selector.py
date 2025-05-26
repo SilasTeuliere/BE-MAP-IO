@@ -5,7 +5,18 @@ import numpy as np
 import matplotlib.dates as mdates
 
 class ManualRectangleSelector:
+    """
+    Une classe pour gérer la sélection manuelle de rectangles sur un graphique matplotlib.
+    """
     def __init__(self, ax, canvas_widget, data, on_select_callback):
+        """
+        Initialise le sélecteur de rectangle manuel.
+        :param ax: L'axe matplotlib sur lequel dessiner le rectangle.
+        :param canvas_widget: Le widget de la figure matplotlib.
+        :param data: Les données à utiliser pour la sélection.
+        :param on_select_callback: Fonction de rappel appelée avec les indices sélectionnés.
+        """
+
         self.ax = ax
         self.canvas_widget = canvas_widget
         self.data = data
@@ -19,6 +30,11 @@ class ManualRectangleSelector:
         self.canvas_widget.mpl_connect("button_release_event", self.on_release)
 
     def on_press(self, event):
+        """
+        Gère l'événement de pression du bouton de la souris.
+        :param event: L'événement de pression du bouton.
+        """
+
         if event.inaxes != self.ax:
             return
         self.start_point = (event.xdata, event.ydata)
@@ -27,6 +43,11 @@ class ManualRectangleSelector:
             self.current_rect_patch = None
 
     def on_motion(self, event):
+        """
+        Gère l'événement de mouvement de la souris.
+        :param event: L'événement de mouvement de la souris.
+        """
+
         if not self.start_point or event.inaxes != self.ax:
             return
 
@@ -47,6 +68,11 @@ class ManualRectangleSelector:
         self.canvas_widget.draw_idle()
 
     def on_release(self, event):
+        """
+        Gère l'événement de relâchement du bouton de la souris.
+        :param event: L'événement de relâchement du bouton.
+        """
+        
         if not self.start_point or event.inaxes != self.ax:
             return
 

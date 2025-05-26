@@ -10,6 +10,10 @@ from Gui.graph_utils import clear_selection, next_slice, previous_slice
 from Gui.graph_utils import go_first, go_to_previous_day, go_to_page, go_to_next_day, go_last, update_page_display
 
 def main():
+    """
+    Fonction principal pour faire tournée le logiciel ClearCCNData.
+    """
+    
     root = tk.Tk()
     root.title("ClearCCNData")
     root.geometry("900x700")

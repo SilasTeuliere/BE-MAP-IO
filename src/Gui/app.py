@@ -4,7 +4,15 @@ from .graph_utils import *
 from .data_utils import *
 
 class CCNDataApp:
+    """
+    Classe principale de l'application ClearCCNData.
+    Elle gère l'interface graphique, les interactions utilisateur et les données.
+    """
     def __init__(self, root):
+        """
+        Initialise l'application ClearCCNData.
+        :param root: La fenêtre principale de l'application.
+        """
         self.root = root
         self.root.title("ClearCCNData")
         self.data = None

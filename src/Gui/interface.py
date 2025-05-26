@@ -6,6 +6,11 @@ from .graph_utils import clear_data, delete_selected_points, undo_all, undo_last
 from .graph_utils import show_about, show_shortcuts, show_statistics
 
 def setup_menu(self):
+    """
+    Configure la barre de menu du logiciel.
+    :param self: Instance de l'application CCNDataApp.
+    """
+
     menu_bar = tk.Menu(self.root, tearoff=0)
 
     file_menu = tk.Menu(menu_bar, tearoff=0)
@@ -39,21 +44,30 @@ def setup_menu(self):
     self.root.config(menu=menu_bar)
 
 def setup_shortcuts(self):
-        modifier = "Command" if platform.system() == "Darwin" else "Control"
-        self.root.bind_all(f"<{modifier}-o>", lambda event: self.load_csv())
-        self.root.bind_all(f"<{modifier}-s>", lambda event: self.save_csv())
-        self.root.bind_all(f"<{modifier}-u>", lambda event: self.clear_data())
-        self.root.bind_all(f"<{modifier}-z>", lambda event: self.undo_last())
-        self.root.bind_all(f"<{modifier}-x>", lambda event: self.delete_selected_points())
-        self.root.bind_all(f"<{modifier}-Shift-Z>", lambda event: self.undo_all())
-        self.root.bind_all(f"<{modifier}-p>", lambda event: self.open_multiplier_window())
-        self.root.bind_all(f"<{modifier}-i>", lambda event: self.invalidate_series())
-        self.root.bind_all(f"<{modifier}-a>", lambda event: self.show_statistics())
-        self.root.bind_all(f"<{modifier}-minus>", lambda event: self.zoom_plot(1.2))  # Ctrl + -
-        self.root.bind_all(f"<{modifier}-plus>", lambda event: self.zoom_plot(0.8))   # Ctrl + +
-        self.root.bind_all(f"<{modifier}-equal>", lambda event: self.zoom_plot(0.8))  # Ctrl + = (pour les claviers sans pavé)
+    """
+    Configure les raccourcis clavier pour l'application.
+    :param self: Instance de l'application CCNDataApp.
+    """
+
+    modifier = "Command" if platform.system() == "Darwin" else "Control"
+    self.root.bind_all(f"<{modifier}-o>", lambda event: self.load_csv())
+    self.root.bind_all(f"<{modifier}-s>", lambda event: self.save_csv())
+    self.root.bind_all(f"<{modifier}-u>", lambda event: self.clear_data())
+    self.root.bind_all(f"<{modifier}-z>", lambda event: self.undo_last())
+    self.root.bind_all(f"<{modifier}-x>", lambda event: self.delete_selected_points())
+    self.root.bind_all(f"<{modifier}-Shift-Z>", lambda event: self.undo_all())
+    self.root.bind_all(f"<{modifier}-p>", lambda event: self.open_multiplier_window())
+    self.root.bind_all(f"<{modifier}-i>", lambda event: self.invalidate_series())
+    self.root.bind_all(f"<{modifier}-a>", lambda event: self.show_statistics())
+    self.root.bind_all(f"<{modifier}-minus>", lambda event: self.zoom_plot(1.2))  # Ctrl + -
+    self.root.bind_all(f"<{modifier}-plus>", lambda event: self.zoom_plot(0.8))   # Ctrl + +
+    self.root.bind_all(f"<{modifier}-equal>", lambda event: self.zoom_plot(0.8))  # Ctrl + = (pour les claviers sans pavé)
 
 def setup_graph_area(self):
+    """
+    Configure la zone de graphique dans l'interface utilisateur.
+    :param self: Instance de l'application CCNDataApp.
+    """
     self.graph_frame = tk.Frame(self.root, bd=2, relief="ridge")
     self.graph_frame.pack(expand=True, fill="both", padx=20, pady=20)
 

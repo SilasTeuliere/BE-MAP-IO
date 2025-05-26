@@ -212,7 +212,6 @@ def invalidate_series(self):
 def show_statistics(self):
     """
     Affiche des statistiques descriptives des données actuellement chargées.
-
     Utilise `pandas.describe()` pour produire un résumé statistique.
     """
 
@@ -234,7 +233,10 @@ def show_statistics(self):
 
 def show_shortcuts(self):
     """
-    Affiche une fenêtre contenant les raccourcis clavier disponibles pour l'utilisateur.
+    Affiche une fenêtre popup contenant la liste des raccourcis clavier disponibles pour l'utilisateur.
+    La fenêtre présente chaque raccourci avec une mise en forme, en mettant en gras la description de l'action.
+    Un bouton "Ok" permet de fermer la fenêtre. Cette fonction est utile pour rappeler à l'utilisateur les commandes
+    clavier supportées par l'application.
     """
 
     shortcut_window = tk.Toplevel()
@@ -314,6 +316,16 @@ def zoom_plot(self, factor, event = None):
     self.canvas_widget.draw_idle()
 
 def on_scroll_zoom(self, event):
+    """
+    Gère le zoom du graphique lorsque l'utilisateur fait défiler la molette de la souris tout en maintenant la touche Ctrl (ou Cmd) enfoncée.
+
+    Paramètres :
+        event : Objet événement contenant les informations sur l'action de défilement, y compris la touche pressée et la direction du défilement.
+    Comportement :
+        - Si la touche Ctrl (ou Cmd) est enfoncée :
+            - Défilement vers le haut : zoom avant sur le graphique.
+            - Défilement vers le bas : zoom arrière sur le graphique.
+    """
     ctrl_pressed = event.key == 'control' or event.key == 'cmd'
 
     if ctrl_pressed:
@@ -354,6 +366,8 @@ def on_select(self, eclick, erelease):
     print(f"{len(indices)} point(s) sélectionné(s) par rectangle.")
 
 def on_click(self, event):
+    """
+    Gère les événements de clic sur les points du graphique."""
     if event.mouseevent.button == 1 and event.artist == self.scatter_points:
         x = self.current_slice['datetime'].to_numpy()
         y = self.current_slice['ccn_conc'].to_numpy()
@@ -379,6 +393,10 @@ def on_click(self, event):
 
 
 def clear_selection(self):
+    """
+    Efface la sélection actuelle de points et supprime le surlignage.
+    Si un rectangle de sélection est actif, il est également désactivé.
+    """
     if self.highlight:
         self.highlight.remove()
         self.highlight = None
@@ -386,10 +404,20 @@ def clear_selection(self):
     self.selected_indices = []
 
 def on_rectangle_select(self, indices):
+    """
+    Gère la sélection de points par rectangle. 
+    Met à jour les points sélectionnés et les surligne.
+    """
     self.selected_indices = indices
     self.highlight_points(indices)
 
+
 def has_next_day(self):
+    """
+    Vérifie s'il y a une page suivante avec une date postérieure à la page actuelle.
+    Retourne True si une telle page existe, sinon False.
+    """
+
     if not self.initial_pages or self.current_page >= len(self.initial_pages) - 1 or self.data.empty:
         return False
 
@@ -408,7 +436,13 @@ def has_next_day(self):
 
     return False
 
+
 def has_previous_day(self):
+    """
+    Vérifie s'il y a une page précédente avec une date antérieure à la page actuelle.
+    Retourne True si une telle page existe, sinon False.
+    """
+
     if not self.initial_pages or self.current_page == 0 or self.data.empty:
         return False
 
@@ -427,27 +461,53 @@ def has_previous_day(self):
 
     return False
 
+
 def next_slice(self):
+    """
+    Passe à la page suivante dans les pages logiques.
+    Si la page actuelle est la dernière, ne fait rien.
+    """
+
     if self.current_page < len(self.pages) - 1:
         self.current_page += 1
         self.display_scatter_plot()
 
 def previous_slice(self):
+    """
+    Passe à la page précédente dans les pages logiques.
+    Si la page actuelle est la première, ne fait rien.
+    """
+
     if self.current_page > 0:
         self.current_page -= 1
         self.display_scatter_plot()
 
 
 def go_first(self):
+    """
+    Va à la première page des pages logiques.
+    Si la page actuelle est déjà la première, ne fait rien.
+    """
+
     self.current_page = 0
     self.display_scatter_plot()
     
 
 def go_last(self):
+    """
+    Va à la dernière page des pages logiques.
+    Si la page actuelle est déjà la dernière, ne fait rien.
+    """
+
     self.current_page = len(self.pages) - 1
     self.display_scatter_plot()
 
 def go_to_previous_day(self):
+    """
+    Va à la page précédente avec une date antérieure à la page actuelle.
+    Si la page actuelle est déjà la première ou si aucune page précédente n'existe, ne fait rien.
+    """
+
     if not self.pages or self.current_page <= 0:
         return
 
@@ -463,6 +523,10 @@ def go_to_previous_day(self):
             return
 
 def go_to_next_day(self):
+    """
+    Va à la page suivante avec une date postérieure à la page actuelle.
+    Si la page actuelle est déjà la dernière ou si aucune page suivante n'existe, ne fait rien.
+    """
     if not self.pages or self.current_page >= len(self.pages) - 1:
         return
     current_start, _ = self.pages[self.current_page]
@@ -547,10 +611,21 @@ def update_navigation_buttons_state(self):
 
 
 def update_page_display(self):
+    """
+    Met à jour l'affichage du numéro de page dans l'interface utilisateur.
+    Affiche le numéro de page actuel et le nombre total de pages.
+    """
+
     self.page_entry.delete(0, tk.END)
     self.page_entry.insert(0, str(self.current_page + 1))
 
 def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
+    """
+    Crée des pages logiques à partir des données en fonction du nombre minimum de points et du maximum de minutes entre les points.
+    Les pages sont définies par des intervalles de temps où la différence entre les points dépasse le seuil spécifié.
+    Les pages sont stockées dans `self.pages` et `self.initial_pages` pour une navigation facile.
+    """
+
     if self.data is None:
         self.pages = []
         return
@@ -588,6 +663,12 @@ def create_logical_pages(self, min_points=5000, max_gap_minutes=2):
 
 
 def add_color_legend(self):
+    """
+    Ajoute une légende de couleurs pour les sursaturations dans le graphique.
+    La légende est affichée dans un cadre dédié en haut du graphique.
+    Si une légende existe déjà, elle est détruite avant d'en créer une nouvelle.
+    """
+
     if hasattr(self, 'legend_frame'):
         self.legend_frame.destroy()
 
@@ -618,6 +699,14 @@ def add_color_legend(self):
         tk.Label(item, text=f"Sursaturation {val}", font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
     
 def display_scatter_plot(self):
+    """
+    Affiche le graphique de dispersion des données dans la page actuelle.
+    Si des points sont sélectionnés, ils sont mis en surbrillance.
+    Si la page actuelle est vide, un graphique vide est affiché avec les axes et le titre appropriés.
+    Si les données ne contiennent pas les colonnes requises, un message d'avertissement est affiché.
+    Si un rectangle de sélection est actif, il est désactivé.
+    Si un graphique existe déjà, il est détruit avant de créer un nouveau graphique.
+    """
     try:
         if hasattr(self, 'scatter_points'):
             self.scatter_points.remove()

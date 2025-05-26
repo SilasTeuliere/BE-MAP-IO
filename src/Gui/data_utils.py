@@ -6,6 +6,11 @@ from data_loader import load_data
 
 
 def load_csv(self):
+    """
+    Ouvre une boîte de dialogue pour sélectionner un fichier CSV et charge les données.
+    :param self: Instance de l'application CCNDataApp.
+    """
+
     file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
     if file_path:
         self.file_path = file_path
@@ -19,6 +24,11 @@ def load_csv(self):
     display_scatter_plot(self)
 
 def save_csv(self):
+    """
+    Ouvre une boîte de dialogue pour sauvegarder les données dans un fichier CSV.
+    :param self: Instance de l'application CCNDataApp.
+    """
+    
     if self.data is not None:
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV Files", "*.csv")])
         if file_path:
