@@ -3,16 +3,19 @@ from unittest.mock import patch
 import pandas as pd
 from src.Gui import data_utils
 
+# Test pour vérifier le chargement et la sauvegarde de fichiers CSV dans l'application CCNDataApp
 class DummySelf:
     def __init__(self):
         self.data = None
         self.file_path = None
         self.deleted_data = pd.DataFrame({'a':[1, 2]})
 
+# Fixture pour créer une instance de DummySelf
 @pytest.fixture
 def dummy():
     return DummySelf()
 
+# Test pour vérifier que le chargement d'un fichier CSV fonctionne correctement
 @patch('src.Gui.data_utils.filedialog.askopenfilename', return_value='fake_path.csv')
 @patch('src.Gui.data_utils.load_data', return_value=pd.DataFrame({'x':[1,2], 'y':[3,4]}))
 @patch('src.Gui.data_utils.create_logical_pages')
@@ -25,6 +28,7 @@ def test_load_csv_success(mock_display, mock_create_pages, mock_load_data, mock_
     mock_display.assert_called_once_with(dummy)
 
 
+# Test pour vérifier que la sauvegarde d'un fichier CSV fonctionne correctement
 @patch('src.Gui.data_utils.filedialog.asksaveasfilename')
 def test_save_csv_with_data_and_deleted(mock_save_dialog, dummy, tmp_path):
     dummy.data = pd.DataFrame({'x':[1,2]})
@@ -43,6 +47,7 @@ def test_save_csv_with_data_and_deleted(mock_save_dialog, dummy, tmp_path):
 
 
 
+# Test pour vérifier que le chargement d'un fichier CSV échoue correctement
 @patch('src.Gui.data_utils.messagebox.showwarning')
 @patch('src.Gui.data_utils.load_data', return_value=None)
 @patch('src.Gui.data_utils.filedialog.askopenfilename', return_value='fake_path.csv')
@@ -54,5 +59,10 @@ def test_load_csv_fail(mock_askopen, mock_load_data, mock_showwarning, dummy):
     assert dummy.data is None
 
 
+# Test pour vérifier que la sauvegarde d'un fichier CSV échoue correctement
+@patch('src.Gui.data_utils.messagebox.showwarning')
+def test_save_csv_no_data(mock_warning, dummy):
+    dummy.data = None
+    data_utils.save_csv(dummy)
+    mock_warning.assert_called_once_with("Sauvegarde", "Aucune donnée à sauvegarder")
 
-""" RAJOUTER SAVE_CSV FAILED"""
