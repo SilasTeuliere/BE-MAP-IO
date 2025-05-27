@@ -3,7 +3,7 @@
 
 datas = [
 	('data/dico_error.json', 'data'),
-	('data/logo.png', 'image')
+	('src/image/logo.png', 'image')
 	]
 
 a = Analysis(
@@ -27,7 +27,8 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='BE-MAP-IO',
+    name='ClearCCNData',
+    icon='src/image/logo.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
